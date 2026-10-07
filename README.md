@@ -50,10 +50,20 @@ A simulação corre a 30 ticks/s fixos sem aleatoriedade. É isto que permite os
 mesmos ticks dão sempre o mesmo resultado. Se mudares dados de jogo, os replays gravados deixam de ser válidos
 e são descartados automaticamente.
 
-## Android / Google Play
+## Android / Google Play (futuro)
 
-O GitHub Actions gera o `.aab` (e um `.apk` de debug para instalares direto no telemóvel) em cada push.
-Os ficheiros ficam em **Actions → execução → Artifacts**. Para assinar e publicar, segue
-[docs/ANDROID_RELEASE.md](docs/ANDROID_RELEASE.md).
+O jogo está preparado para ser publicado como `.aab`, mas **ainda não é compilado**. Já estão prontos:
+
+- o projeto Android em `android/`, com ecrã horizontal e modo imersivo
+- o workflow manual `.github/workflows/android.yml`, que só corre quando o lançares
+
+Enquanto isso, o workflow `ci.yml` corre os testes e o build web em cada push.
+Quando chegar a altura, segue [docs/ANDROID_RELEASE.md](docs/ANDROID_RELEASE.md).
+
+Regras para não comprometer a publicação:
+
+- O jogo tem de funcionar offline e com toque. Não usar hover, teclado obrigatório nem recursos de rede.
+- Os assets ficam em `public/` e os caminhos são relativos, porque correm dentro da WebView.
+- Os dados guardados ficam só no dispositivo; isto simplifica a política de privacidade da Play Store.
 
 Mais detalhes de design em [docs/DESIGN.md](docs/DESIGN.md).

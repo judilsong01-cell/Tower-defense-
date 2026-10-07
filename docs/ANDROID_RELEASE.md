@@ -1,12 +1,15 @@
 # Publicar na Google Play (.aab)
 
-## 1. O que já está feito
+> **Estado:** ainda não se compila o `.aab`. Este guia é para quando o jogo estiver pronto a publicar.
+
+## 1. O que já está preparado
 
 - O projeto Android (`android/`) é gerado pelo Capacitor, com ecrã horizontal fixo e modo imersivo (sem barras do sistema).
-- O workflow `.github/workflows/android.yml` corre os testes e compila em cada push:
+- O workflow `.github/workflows/android.yml` **só corre manualmente**: GitHub → Actions → *Android release* → *Run workflow*.
+  Corre os testes e gera:
   - `app-release-aab`: o **.aab** para a Google Play
-  - `app-debug-apk`: um **.apk** de debug para instalares direto no telemóvel e testar
-- O `versionCode` é o número da execução do GitHub Actions, por isso cada build tem um número maior
+  - `app-debug-apk`: um **.apk** de debug para instalar direto no telemóvel
+- O `versionCode` é o número da execução do workflow, por isso cada build tem um número maior
   (a Google Play exige-o).
 
 Descarregas os ficheiros em **GitHub → Actions → (execução) → Artifacts**.
