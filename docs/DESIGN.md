@@ -1,4 +1,4 @@
-# Documento de design (v0.1)
+# Documento de design (v0.2)
 
 ## Conceito
 
@@ -35,6 +35,8 @@ Os alcances estão definidos virados para a direita e rodam com a direção esco
 | Lírio | Medic | 16 | – | Cura em área 4×3 | Cuidados Intensivos: cura +40%, 2 alvos (20s) |
 | Corvo | Sniper | 12 | – | Prioriza aéreos | Rajada: ATK +30%, ataques 40% mais rápidos (15s) |
 | Trovão | Sniper | 24 | – | Dano em área | Barragem: ATK +60% (15s) |
+| Bastião | Defender | 19 | 3 | Tanque que ataca a casa da frente (a partir do 1-4) | Fortificar: DEF +50%, ATK +40% (20s) |
+| Falcão | Sniper | 13 | – | Anti-aéreo (a partir do 1-4) | Olho de Falcão: ATK +60% (15s) |
 
 ## Inimigos
 
@@ -45,7 +47,27 @@ Os alcances estão definidos virados para a direita e rodam com a direção esco
 | Escudo de Choque | Lento, DEF alta, ocupa 2 de bloqueio |
 | Fuzileiro | Dispara a 2 casas enquanto anda |
 | Drone de Vigilância | Aéreo, não ataca |
+| Drone de Assalto | Aéreo, dispara a 2 casas contra operadores |
+| Executor | Muito lento e resistente, ocupa 2 de bloqueio, custa 2 vidas |
 | Clérigo | Boss: muito HP, ataques rápidos à distância e corpo-a-corpo, custa 2 vidas |
+
+## Estágios
+
+| # | Nome | Ideia | Unid. |
+| --- | --- | --- | --- |
+| 1-1 | Refúgio do Setor 7 | Duas entradas que se juntam num corredor | 5 |
+| 1-2 | Corredor de Serviço | Um só caminho em serpentina | 5 |
+| 1-3 | Avenida da Ordem | Avenida larga; só o caminho do meio bloqueia; Executor no fim | 6 |
+| 1-4 | Pátio de Vigilância | Muitos drones (aparecem Bastião e Falcão) | 6 |
+| 1-5 | Pátio das Duas Portas | Duas entradas, um único ponto de bloqueio junto à base | 6 |
+| 1-6 | Esgotos de Concórdia | Caminho muito longo, Clérigo no fim | 6 |
+| 1-7 | Mercado Negro | Três frentes convergem num cruzamento | 7 |
+| 1-8 | Fábrica de Serenil | Duas bases independentes | 7 |
+| 1-9 | Torre do Conselho | Base no centro, ataques dos dois lados e do ar | 8 |
+| 1-10 | Juízo Final | Três frentes, três Clérigos | 8 |
+
+Todos os estágios têm teste automático: sem defesa perde-se, e a IA consegue vencer.
+Ao equilibrar, se a IA deixar de ganhar um estágio, o teste falha.
 
 ## Deploy automático
 
@@ -54,13 +76,14 @@ Os alcances estão definidos virados para a direita e rodam com a direção esco
 - **AUTO: IA**: um plano é calculado a partir do mapa. O defensor vai para o ponto onde mais rotas se juntam,
   os vanguards ficam atrás dele, os snipers vão para as plataformas que cobrem mais caminho perto do defensor
   e o medic para a plataforma que cobre mais aliados. Depois coloca-os por ordem à medida que há DP,
-  recoloca quem cai e usa skills automáticas. Hoje ganha o nível 1 com 2★.
+  recoloca quem cai e usa skills automáticas. Com várias rotas, garante primeiro um bloqueador por rota.
+  Hoje ganha os 10 estágios, alguns à justa (1-9 e 1-10).
 - Em ambos os modos, **ASSUMIR** entrega o controlo ao jogador a meio da batalha.
 
 ## Próximos passos sugeridos
 
 1. Arte final (ver ART_GUIDE.md), ícone e splash
 2. Som e música
-3. Mais níveis e uma estrutura de campanha
+3. Desbloqueio progressivo dos estágios e mais capítulos
 4. Mais classes (Guard, Caster…) e dano mágico com resistência (RES)
 5. Meta-jogo: níveis de operadores, seleção de equipa

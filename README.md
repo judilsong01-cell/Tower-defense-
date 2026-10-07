@@ -5,11 +5,12 @@ Tower defense em pixel art inspirado nas mecânicas do Arknights, num mundo dist
 
 Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** para a Google Play) com **Capacitor**.
 
-## Estado atual (v0.1)
+## Estado atual (v0.2)
 
-- 1 nível jogável completo (14 vagas, 36 inimigos, boss no fim)
-- 6 operadores de 4 classes: Vanguard ×2, Defender, Medic, Sniper ×2
-- 6 inimigos: Pacificador, Cão de Patrulha, Escudo de Choque, Fuzileiro, Drone (aéreo), Clérigo (boss)
+- **10 estágios jogáveis** (1-1 a 1-10), com dificuldade crescente: uma ou várias entradas, ataques aéreos, duas bases e base cercada no centro
+- 8 operadores de 4 classes: Vanguard ×2, Defender ×2, Medic, Sniper ×3 (Bastião e Falcão juntam-se a partir do 1-4)
+- 8 inimigos: Pacificador, Cão de Patrulha, Escudo de Choque, Fuzileiro, Drone, Drone de Assalto, Executor e Clérigo (boss)
+- Todos os estágios estão desbloqueados para testar; o menu mostra as estrelas de cada um e o ecrã de vitória tem o botão **SEGUINTE**
 - Mecânicas: chão/plataforma, bloqueio, DP, direção de ataque, skills com SP, retirar (devolve 50% do DP),
   redeploy com cooldown e custo crescente, limite de unidades, vidas e 3 estrelas
 - Velocidade x1/x2/x3, pausa e **auto-cast de skills** (botão AUTO SK)
@@ -40,6 +41,7 @@ Estrutura:
 | Pasta | Conteúdo |
 | --- | --- |
 | `src/data/` | Dados do jogo: operadores, inimigos e níveis (editar aqui para equilibrar) |
+| `tests/` | Testes: regras, replays e a garantia de que a IA vence cada estágio |
 | `src/sim/` | Simulação determinística sem Phaser: batalha, grelha/caminhos, IA, replays |
 | `src/game/` | Phaser: cenas, UI, arte placeholder e save |
 | `src/i18n/` | Textos PT e EN |

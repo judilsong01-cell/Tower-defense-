@@ -46,3 +46,8 @@ export function writeSave(update: (data: SaveData) => void): void {
     // Storage unavailable: progress lives only for this session.
   }
 }
+
+/** UI state kept while the app is open (not persisted). */
+export const session = {
+  selectedLevel: 'l1',
+};

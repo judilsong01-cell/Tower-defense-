@@ -124,6 +124,7 @@ const WEAPONS: Record<string, Overlay> = {
   launcher: [...box(3, 5, 15, 7, 'g'), [15, 6, 'a'], [9, 8, 'g']],
   baton: [...line(12, 7, 12, 12, 'g')],
   riotShield: [...box(11, 4, 14, 14, 'S'), ...line(12, 7, 13, 7, 'v')],
+  hammer: [...line(13, 3, 13, 12, 'g'), ...box(12, 2, 15, 5, 'w')],
   pistols: [[13, 9, 'g'], [14, 9, 'g'], [15, 9, 'g'], [13, 10, 'g'], [3, 9, 'g'], [2, 9, 'g'], [1, 9, 'g'], [3, 10, 'g']],
 };
 
@@ -140,6 +141,8 @@ const OP_ART: Record<string, CharacterArt> = {
   brasa: { map: HUMAN, pal: { h: '#8a2a1c', c: '#2b2d34', d: '#1f2026', a: '#c8323a', w: '#d8dde3', g: '#555' }, overlay: WEAPONS.sword },
   faisca: { map: HUMAN, pal: { h: '#e0b050', c: '#33353d', d: '#24252b', a: '#ff6a3a', w: '#ffd9a0', g: '#555' }, overlay: WEAPONS.sword },
   muralha: { map: HUMAN, pal: { h: '#3b3b3b', c: '#4a4e57', d: '#363940', a: '#c8323a', S: '#6b707a' }, overlay: WEAPONS.shield },
+  bastiao: { map: HUMAN, pal: { h: '#6b5a4a', c: '#3d4048', d: '#2c2e34', a: '#c8323a', S: '#8a7f73' }, overlay: WEAPONS.shield },
+  falcao: { map: HUMAN, pal: { h: '#a8a8a8', c: '#2a2724', d: '#1d1b19', a: '#c8323a', g: '#6b707a' }, overlay: WEAPONS.rifle },
   lirio: { map: HUMAN, pal: { h: '#d9d2c5', c: '#e8e8e8', d: '#bdbdbd', a: '#c8323a', S: '#f4f4f4' }, overlay: WEAPONS.medkit },
   corvo: { map: HUMAN, pal: { h: '#121214', c: '#1d1e22', d: '#141518', a: '#c8323a', g: '#5c616b' }, overlay: WEAPONS.rifle },
   trovao: { map: HUMAN, pal: { h: '#5a4632', c: '#3f4436', d: '#2f3329', a: '#c8323a', g: '#2a2c30' }, overlay: WEAPONS.launcher },
@@ -152,6 +155,8 @@ const ENEMY_ART: Record<string, CharacterArt> = {
   rifleman: { map: HUMAN, helmet: true, pal: { ...REGIME, c: '#b4b9c2', a: '#5a6b85', g: '#26272b' }, overlay: WEAPONS.rifle },
   riot: { map: HUMAN, helmet: true, pal: { ...REGIME, h: '#1d1f24', c: '#2b2d33', d: '#1f2025', a: '#bfd7ff', p: '#26282d', S: '#9fb0c8' }, overlay: WEAPONS.riotShield },
   cleric: { map: HUMAN, coat: true, pal: { h: '#0c0c0e', c: '#151518', d: '#050506', a: '#efefef', p: '#151518', g: '#9aa0aa', s: '#e8cfc0' }, overlay: WEAPONS.pistols },
+  executor: { map: HUMAN, helmet: true, pal: { ...REGIME, h: '#26282e', c: '#33363d', d: '#22242a', a: '#bfd7ff', p: '#2a2c32', w: '#8d939e', g: '#4a4d55' }, overlay: WEAPONS.hammer },
+  gunship: { map: DRONE, pal: { m: '#4a4f5a', v: '#0e0f12', e: '#ff5a5f' }, overlay: [[2, 11, 'v'], [3, 12, 'v'], [13, 11, 'v'], [12, 12, 'v']] },
   hound: { map: HOUND, pal: { f: '#3a3d44', e: '#bfd7ff' } },
   drone: { map: DRONE, pal: { m: '#d9dbe0', v: '#16171a', e: '#bfd7ff' } },
 };

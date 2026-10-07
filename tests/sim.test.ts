@@ -17,6 +17,13 @@ function run(battle: Battle, before?: (b: Battle) => void): Battle {
 }
 
 describe('grid', () => {
+  it('every map fits the battle screen (max 16x7)', () => {
+    for (const level of LEVELS) {
+      expect(level.map.length).toBeLessThanOrEqual(7);
+      expect(level.map[0].length).toBeLessThanOrEqual(16);
+    }
+  });
+
   it('every level route is walkable from spawn to base', () => {
     for (const level of LEVELS) {
       const grid = new Grid(level.map);
@@ -41,9 +48,8 @@ describe('battle rules', () => {
     expect(physicalDamage(500, 100)).toBe(400);
   });
 
-  it('loses when nobody defends', () => {
-    const b = run(new Battle(LEVEL_1));
-    expect(b.result).toBe('lost');
+  it.each(LEVELS.map((l) => [l.id, l] as const))('%s is lost when nobody defends', (_id, level) => {
+    expect(run(new Battle(level)).result).toBe('lost');
   });
 
   it('only deploys melee on ground and ranged on high ground', () => {
@@ -94,8 +100,9 @@ describe('battle rules', () => {
 });
 
 describe('auto deploy', () => {
-  it('the AI clears level 1', () => {
-    const b = new Battle(LEVEL_1);
+  // Guarantees every stage is beatable with its squad (and keeps balance changes honest).
+  it.each(LEVELS.map((l) => [l.id, l] as const))('the AI clears %s', (_id, level) => {
+    const b = new Battle(level);
     const ai = new AutoDeployer(b);
     run(b, (x) => ai.update(x));
     expect(b.result).toBe('won');

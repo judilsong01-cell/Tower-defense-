@@ -15,9 +15,12 @@ export interface PlannedDeploy {
 }
 
 interface PathInfo {
-  routes: number;
+  /** Indices of the ground routes that cross this tile. */
+  routeIds: Set<number>;
   /** Tiles left until the base (smallest across routes). */
   distToBase: number;
+  /** Tiles walked since the spawn (smallest across routes). */
+  distFromSpawn: number;
   /** Direction from this tile towards where enemies come from. */
   upstream: Dir;
 }
@@ -47,22 +50,25 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
   const ground = new Map<number, PathInfo & { tile: Point }>();
   const air = new Set<number>();
 
+  let routeCount = 0;
   for (const route of battle.level.routes) {
     const tiles = routeTiles(grid, route);
     if (route.flying) {
       for (const t of tiles) air.add(tileKey(t[0], t[1]));
       continue;
     }
+    const routeId = routeCount++;
     tiles.forEach((t, i) => {
       const key = tileKey(t[0], t[1]);
       const dist = tiles.length - 1 - i;
       const upstream = i > 0 ? dirTowards(t, tiles[i - 1]) : 'left';
       const info = ground.get(key);
       if (info) {
-        info.routes++;
-        if (dist < info.distToBase) info.distToBase = dist;
+        info.routeIds.add(routeId);
+        info.distToBase = Math.min(info.distToBase, dist);
+        info.distFromSpawn = Math.min(info.distFromSpawn, i);
       } else {
-        ground.set(key, { tile: t, routes: 1, distToBase: dist, upstream });
+        ground.set(key, { tile: t, routeIds: new Set([routeId]), distToBase: dist, distFromSpawn: i, upstream });
       }
     });
   }
@@ -74,7 +80,8 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
     .filter((g) => grid.deployable(g.tile[0], g.tile[1], 'ground'))
     .map((g) => {
       const highNear = highTiles.filter((h) => chebyshev(h, g.tile) <= 2).length;
-      return { ...g, score: g.routes * 100 + highNear * 5 + g.distToBase };
+      // Far from the spawn = enemies take longer to arrive, so a blocker deployed late still catches them.
+      return { ...g, score: g.routeIds.size * 100 + highNear * 5 + Math.min(g.distFromSpawn, 12) * 2 };
     })
     .sort((a, b) => b.score - a.score || a.tile[1] - b.tile[1] || a.tile[0] - b.tile[0]);
 
@@ -85,23 +92,45 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
   const rangedDefs = defs.filter((d) => d.placement === 'high' && !d.heals);
   const medicDefs = defs.filter((d) => d.heals);
 
-  // Main blocker: the defender (or first melee) holds the best chokepoint.
-  const anchor = groundCandidates[0];
-  if (!anchor) return [];
+  // Blockers: first make sure every ground route has someone blocking it (defenders
+  // first, at the busiest chokepoints), then add backups right next to those spots.
   const melee = [...meleeDefs].sort((a, b) => (a.cls === 'defender' ? -1 : 0) - (b.cls === 'defender' ? -1 : 0) || b.block - a.block);
-  // Backup blockers line up downstream of the anchor, closest first.
-  const downstream = groundCandidates
-    .filter((g) => g !== anchor && g.distToBase < anchor.distToBase)
-    .sort((a, b) => b.distToBase - a.distToBase);
-  const meleeSpots = [anchor, ...downstream];
-  melee.forEach((def, i) => {
-    const spot = meleeSpots[i];
-    if (!spot) return;
-    used.add(tileKey(spot.tile[0], spot.tile[1]));
-    plan.push({ op: def.id, x: spot.tile[0], y: spot.tile[1], dir: spot.upstream });
-  });
+  const spots: typeof groundCandidates = [];
+  const primary = new Set<number>();
+  const covered = new Set<number>();
+  for (const def of melee) {
+    const free = groundCandidates.filter((g) => !spots.includes(g));
+    const uncovered = (g: (typeof free)[number]) => [...g.routeIds].filter((r) => !covered.has(r)).length;
+    let pick = free
+      .filter((g) => uncovered(g) > 0)
+      .sort((a, b) => uncovered(b) - uncovered(a) || b.score - a.score)[0];
+    let isPrimary = !!pick;
+    if (!pick) {
+      const backupScore = (g: (typeof free)[number]): number => {
+        let best = -1;
+        for (const sp of spots) {
+          if (Math.abs(sp.tile[0] - g.tile[0]) + Math.abs(sp.tile[1] - g.tile[1]) !== 1) continue;
+          const shared = [...g.routeIds].filter((r) => sp.routeIds.has(r)).length;
+          if (shared === 0) continue;
+          best = Math.max(best, shared * 100 + (g.distToBase < sp.distToBase ? 50 : 0) + g.score / 100);
+        }
+        return best;
+      };
+      pick = free.filter((g) => backupScore(g) >= 0).sort((a, b) => backupScore(b) - backupScore(a))[0] ?? free[0];
+      isPrimary = false;
+    }
+    if (!pick) break;
+    spots.push(pick);
+    for (const r of pick.routeIds) covered.add(r);
+    const key = tileKey(pick.tile[0], pick.tile[1]);
+    used.add(key);
+    if (isPrimary) primary.add(key);
+    plan.push({ op: def.id, x: pick.tile[0], y: pick.tile[1], dir: pick.upstream });
+  }
 
-  const meleeTiles = plan.map((p) => ({ tile: [p.x, p.y] as Point, weight: p.op === melee[0]?.id ? 3 : 1 }));
+  const meleeTiles = plan.map((p) => ({ tile: [p.x, p.y] as Point, weight: primary.has(tileKey(p.x, p.y)) ? 3 : 1 }));
+  /** How many ranged operators already cover each tile, so later ones spread out. */
+  const rangedCover = new Map<number, number>();
 
   const bestHigh = (score: (tiles: Point[]) => number, def: OperatorDef): PlannedDeploy | null => {
     let best: PlannedDeploy | null = null;
@@ -125,17 +154,26 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
       let s = 0;
       for (const [x, y] of tiles) {
         const key = tileKey(x, y);
-        if (ground.has(key)) s += 1;
-        if (def.canHitAir && air.has(key)) s += 0.5;
-        if (meleeTiles.some((m) => chebyshev(m.tile, [x, y]) <= 1 && ground.has(key))) s += 2;
+        let v = 0;
+        if (ground.has(key)) v += 1;
+        if (def.canHitAir && air.has(key)) v += def.prioritizeAir ? 1.5 : 0.5;
+        const near = meleeTiles.find((m) => chebyshev(m.tile, [x, y]) <= 1);
+        if (near && ground.has(key)) v += 2 * (near.weight === 3 ? 1.5 : 1);
+        s += v / (1 + (rangedCover.get(key) ?? 0));
       }
       return s;
     }, def);
-    if (spot) plan.push(spot);
+    if (spot) {
+      plan.push(spot);
+      for (const [x, y] of rangeTiles(def.range, spot.x, spot.y, spot.dir)) {
+        const key = tileKey(x, y);
+        rangedCover.set(key, (rangedCover.get(key) ?? 0) + 1);
+      }
+    }
   }
 
   for (const def of medicDefs) {
-    const allies = plan.map((p) => ({ tile: [p.x, p.y] as Point, weight: p.op === melee[0]?.id ? 3 : 1 }));
+    const allies = plan.map((p) => ({ tile: [p.x, p.y] as Point, weight: primary.has(tileKey(p.x, p.y)) ? 3 : 1 }));
     const spot = bestHigh((tiles) => {
       let s = 0;
       for (const [x, y] of tiles) for (const a of allies) if (a.tile[0] === x && a.tile[1] === y) s += a.weight;
@@ -144,9 +182,14 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
     if (spot) plan.push(spot);
   }
 
+  // Order: every route's first blocker (cheapest first) so no route stays open,
+  // then the usual vanguard / defender / sniper / medic order.
   const seen = new Map<string, number>();
   const prio = new Map(defs.map((d) => [d.id, 0]));
   for (const d of [...defs].sort((a, b) => a.cost - b.cost)) prio.set(d.id, priority(d, seen));
+  for (const p of plan) {
+    if (primary.has(tileKey(p.x, p.y))) prio.set(p.op, -1 + battle.rosterEntry(p.op)!.def.cost / 1000);
+  }
   return plan.sort((a, b) => prio.get(a.op)! - prio.get(b.op)!);
 }
 

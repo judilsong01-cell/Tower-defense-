@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { COLORS, CSS, GAME_H, GAME_W, TILE } from '../../config';
-import { getLevel } from '../../data/levels';
+import { getLevel, LEVELS } from '../../data/levels';
 import type { Dir, LevelDef } from '../../data/types';
 import { t, type StringKey } from '../../i18n';
 import { AutoDeployer } from '../../sim/ai';
 import { Battle, DT, type BattleEvent, type EnemyUnit, type OperatorUnit } from '../../sim/battle';
 import { rangeTiles, type TileKind } from '../../sim/grid';
 import { dataVersion, ReplayPlayer, ReplayRecorder } from '../../sim/replay';
-import { loadSave, writeSave } from '../save';
+import { loadSave, session, writeSave } from '../save';
 import { Button, panel, text } from '../ui/widgets';
 
 export type BattleMode = 'manual' | 'replay' | 'ai';
@@ -111,6 +111,7 @@ export class BattleScene extends Phaser.Scene {
 
   init(data: BattleSceneData): void {
     this.level = getLevel(data.levelId);
+    session.selectedLevel = this.level.id;
     this.mode = data.mode;
     this.speedIndex = 0;
     this.menuPaused = false;
@@ -867,8 +868,19 @@ export class BattleScene extends Phaser.Scene {
     }
     text(this, GAME_W / 2, 178, t('result.stats', { k: b.killed, t: b.totalEnemies, l: b.lives }), { align: 'center', color: CSS.dim }).setDepth(5001);
     if (replaySaved) text(this, GAME_W / 2, 194, t('result.replaySaved'), { align: 'center', color: CSS.gold }).setDepth(5001);
-    new Button(this, GAME_W / 2 - 128, 212, 120, 24, t('result.retry'), () => this.scene.restart({ levelId: this.level.id, mode: this.initialMode() }), 'accent').setDepth(5001);
-    new Button(this, GAME_W / 2 + 8, 212, 120, 24, t('result.menu'), () => this.scene.start('Menu')).setDepth(5001);
+    const index = LEVELS.findIndex((l) => l.id === this.level.id);
+    const next = won ? LEVELS[index + 1] : undefined;
+    const buttons: [string, () => void][] = [[t('result.retry'), () => this.scene.restart({ levelId: this.level.id, mode: this.initialMode() })]];
+    if (next) buttons.push([t('result.next'), () => this.scene.restart({ levelId: next.id, mode: 'manual' })]);
+    buttons.push([t('result.menu'), () => this.scene.start('Menu')]);
+    const bw = 120;
+    const gap = 8;
+    let bx = GAME_W / 2 - (buttons.length * bw + (buttons.length - 1) * gap) / 2;
+    buttons.forEach(([label, onClick], i) => {
+      const accent = next ? i === 1 : i === 0;
+      new Button(this, bx, 212, bw, 24, label, onClick, accent ? 'accent' : 'normal').setDepth(5001);
+      bx += bw + gap;
+    });
   }
 }
 

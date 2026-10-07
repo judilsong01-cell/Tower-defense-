@@ -30,11 +30,11 @@ o jogo usa o placeholder e escreve um aviso na consola.
 
 ### Operadores (32×32 por frame)
 
-`op_brasa`, `op_faisca`, `op_muralha`, `op_lirio`, `op_corvo`, `op_trovao`
+`op_brasa`, `op_faisca`, `op_muralha`, `op_bastiao`, `op_lirio`, `op_corvo`, `op_falcao`, `op_trovao`
 
 ### Inimigos (32×32 por frame)
 
-`en_peacekeeper`, `en_hound`, `en_riot`, `en_rifleman`, `en_drone`, `en_cleric`
+`en_peacekeeper`, `en_hound`, `en_riot`, `en_rifleman`, `en_drone`, `en_gunship`, `en_executor`, `en_cleric`
 (o Clérigo é desenhado a 125% no jogo por ser boss).
 
 ### Interface

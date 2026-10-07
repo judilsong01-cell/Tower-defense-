@@ -13,6 +13,10 @@ export const ENEMIES: Record<string, EnemyDef> = {
   rifleman: { ...base, id: 'rifleman', hp: 1300, atk: 240, def: 60, interval: 2.4, speed: 0.85, range: 2.0 },
   /** Surveillance drone: flies straight to the base, cannot be blocked. */
   drone: { ...base, id: 'drone', hp: 1100, atk: 0, def: 50, interval: 1.0, speed: 1.2, flying: true },
+  /** Armed drone: flies straight to the base and shoots operators in range. */
+  gunship: { ...base, id: 'gunship', hp: 1500, atk: 230, def: 90, interval: 2.2, speed: 0.9, range: 2.0, flying: true },
+  /** Heavy executioner with a hammer: slow, tough, takes two block slots and costs two lives. */
+  executor: { ...base, id: 'executor', hp: 5200, atk: 620, def: 320, interval: 2.8, speed: 0.5, blockCost: 2, lifeDamage: 2 },
   /** Elite cleric: gun-kata master. Boss of the level. */
   cleric: {
     ...base,

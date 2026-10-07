@@ -1,4 +1,12 @@
-import type { LevelDef } from './types';
+import type { LevelDef, WaveDef } from './types';
+
+const BASE_SQUAD = ['brasa', 'faisca', 'muralha', 'lirio', 'corvo', 'trovao'] as const;
+/** From 1-4 on, two more operators join to handle multiple fronts and air raids. */
+const FULL_SQUAD = [...BASE_SQUAD, 'bastiao', 'falcao'] as const;
+
+function w(time: number, enemy: string, route: string, count = 1, interval = 0): WaveDef {
+  return { time, enemy, route, count, interval };
+}
 
 // Legend: see LevelDef in ./types.ts
 export const LEVEL_1: LevelDef = {
@@ -38,10 +46,357 @@ export const LEVEL_1: LevelDef = {
   startDp: 10,
   dpPerSecond: 1,
   deployLimit: 5,
-  squad: ['brasa', 'faisca', 'muralha', 'lirio', 'corvo', 'trovao'],
+  squad: BASE_SQUAD,
 };
 
-export const LEVELS: readonly LevelDef[] = [LEVEL_1];
+const LEVEL_2: LevelDef = {
+  id: 'l2',
+  map: [
+    '##############',
+    'S........HHH##',
+    '#HHHHHHH.HHH##',
+    '##......,.HH##',
+    '##.HHHHHHHHH##',
+    '##...........B',
+    '##############',
+  ],
+  routes: [{ id: 'main', spawn: [0, 1], base: [13, 5] }],
+  waves: [
+    w(3, 'peacekeeper', 'main', 4, 3),
+    w(18, 'hound', 'main', 4, 1.5),
+    w(30, 'peacekeeper', 'main', 4, 2.5),
+    w(45, 'rifleman', 'main', 3, 3),
+    w(60, 'hound', 'main', 5, 1.2),
+    w(72, 'peacekeeper', 'main', 5, 2),
+    w(88, 'rifleman', 'main', 2, 3),
+    w(92, 'riot', 'main'),
+  ],
+  lives: 10,
+  startDp: 10,
+  dpPerSecond: 1,
+  deployLimit: 5,
+  squad: BASE_SQUAD,
+};
+
+const LEVEL_3: LevelDef = {
+  id: 'l3',
+  map: [
+    '##############',
+    '#HHH#HHHH#HHH#',
+    '#............#',
+    'S............B',
+    '#............#',
+    '#HHH#HHHH#HHH#',
+    '##############',
+  ],
+  routes: [
+    { id: 'main', spawn: [0, 3], base: [13, 3] },
+    { id: 'air', spawn: [0, 3], base: [13, 3], flying: true },
+  ],
+  waves: [
+    w(3, 'peacekeeper', 'main', 4, 2.5),
+    w(15, 'riot', 'main', 2, 6),
+    w(30, 'hound', 'main', 5, 1),
+    w(40, 'drone', 'air', 2, 3),
+    w(50, 'riot', 'main', 3, 5),
+    w(62, 'rifleman', 'main', 3, 2.5),
+    w(78, 'peacekeeper', 'main', 6, 1.5),
+    w(90, 'riot', 'main', 2, 4),
+    w(100, 'executor', 'main'),
+  ],
+  lives: 10,
+  startDp: 12,
+  dpPerSecond: 1,
+  deployLimit: 6,
+  squad: BASE_SQUAD,
+};
+
+const LEVEL_4: LevelDef = {
+  id: 'l4',
+  map: [
+    '######S#######',
+    '##HHHHhHHHHH##',
+    'S............#',
+    '#HH.HHHHH.HH.B',
+    'S............#',
+    '##HHHHhHHHHH##',
+    '######S#######',
+  ],
+  routes: [
+    { id: 'top', spawn: [0, 2], base: [13, 3] },
+    { id: 'bottom', spawn: [0, 4], base: [13, 3] },
+    { id: 'airTop', spawn: [6, 0], base: [13, 3], flying: true },
+    { id: 'airBottom', spawn: [6, 6], base: [13, 3], flying: true },
+  ],
+  waves: [
+    w(3, 'peacekeeper', 'top', 3, 3),
+    w(20, 'drone', 'airTop', 2, 3),
+    w(18, 'peacekeeper', 'bottom', 3, 3),
+    w(24, 'drone', 'airBottom', 3, 2.5),
+    w(36, 'gunship', 'airTop', 2, 4),
+    w(45, 'hound', 'top', 4, 1.2),
+    w(52, 'rifleman', 'bottom', 2, 3),
+    w(60, 'gunship', 'airBottom', 2, 4),
+    w(72, 'drone', 'airTop', 4, 1.5),
+    w(80, 'peacekeeper', 'top', 4, 2),
+    w(85, 'peacekeeper', 'bottom', 4, 2),
+    w(95, 'gunship', 'airTop', 2, 3),
+    w(97, 'gunship', 'airBottom', 2, 3),
+  ],
+  lives: 10,
+  startDp: 14,
+  dpPerSecond: 1,
+  deployLimit: 6,
+  squad: FULL_SQUAD,
+};
+
+const LEVEL_5: LevelDef = {
+  id: 'l5',
+  map: [
+    '################',
+    'S...........,..#',
+    '#HH.HHHH.HHHH#.#',
+    '#HH.HHHH.HHHH#.B',
+    '#HH.HHHH.HHHH#.#',
+    'S...........,..#',
+    '################',
+  ],
+  routes: [
+    { id: 'top', spawn: [0, 1], base: [15, 3] },
+    { id: 'bottom', spawn: [0, 5], base: [15, 3] },
+    { id: 'airTop', spawn: [0, 1], base: [15, 3], flying: true },
+  ],
+  waves: [
+    w(3, 'peacekeeper', 'top', 3, 3),
+    w(10, 'peacekeeper', 'bottom', 3, 3),
+    w(22, 'riot', 'top', 2, 5),
+    w(30, 'hound', 'bottom', 4, 1.2),
+    w(42, 'rifleman', 'top', 2, 3),
+    w(48, 'executor', 'bottom'),
+    w(60, 'peacekeeper', 'top', 4, 2),
+    w(62, 'peacekeeper', 'bottom', 4, 2),
+    w(75, 'drone', 'airTop', 3, 2),
+    w(85, 'riot', 'bottom', 2, 4),
+    w(95, 'executor', 'top'),
+    w(100, 'hound', 'top', 4, 1),
+    w(102, 'hound', 'bottom', 4, 1),
+  ],
+  lives: 10,
+  startDp: 12,
+  dpPerSecond: 1,
+  deployLimit: 6,
+  squad: FULL_SQUAD,
+};
+
+const LEVEL_6: LevelDef = {
+  id: 'l6',
+  map: [
+    '################',
+    'S...HHH.....HH##',
+    '#HH.HHH.HHH.HH##',
+    '#HH.HHH.HHH.HH.B',
+    '#HH.HHH.HHH.HH.#',
+    '#HH.....HHH....#',
+    '################',
+  ],
+  routes: [
+    { id: 'main', spawn: [0, 1], base: [15, 3] },
+    { id: 'air', spawn: [0, 1], base: [15, 3], flying: true },
+  ],
+  waves: [
+    w(3, 'peacekeeper', 'main', 6, 3),
+    w(25, 'hound', 'main', 6, 1),
+    w(40, 'riot', 'main', 3, 5),
+    w(55, 'rifleman', 'main', 4, 3),
+    w(62, 'drone', 'air', 3, 2),
+    w(75, 'peacekeeper', 'main', 6, 2),
+    w(90, 'executor', 'main', 2, 8),
+    w(100, 'gunship', 'air', 2, 4),
+    w(110, 'hound', 'main', 6, 0.8),
+    w(120, 'cleric', 'main'),
+  ],
+  lives: 10,
+  startDp: 12,
+  dpPerSecond: 1,
+  deployLimit: 6,
+  squad: FULL_SQUAD,
+};
+
+const LEVEL_7: LevelDef = {
+  id: 'l7',
+  map: [
+    '#######S########',
+    'S......,HHHHHH##',
+    '#HHHHH#.#HHHH###',
+    '#HHHHH#........B',
+    '#HHHHH#.#HHHH###',
+    'S......,HHHHHH##',
+    '################',
+  ],
+  routes: [
+    { id: 'left', spawn: [0, 1], base: [15, 3] },
+    { id: 'north', spawn: [7, 0], base: [15, 3] },
+    { id: 'south', spawn: [0, 5], base: [15, 3] },
+    { id: 'air', spawn: [7, 0], base: [15, 3], flying: true },
+  ],
+  waves: [
+    w(3, 'peacekeeper', 'left', 3, 3),
+    w(8, 'peacekeeper', 'north', 3, 3),
+    w(14, 'peacekeeper', 'south', 3, 3),
+    w(28, 'hound', 'left', 4, 1),
+    w(30, 'hound', 'south', 4, 1),
+    w(45, 'riot', 'north', 2, 5),
+    w(55, 'rifleman', 'left', 2, 3),
+    w(57, 'rifleman', 'south', 2, 3),
+    w(70, 'gunship', 'air', 3, 3),
+    w(80, 'executor', 'north'),
+    w(85, 'peacekeeper', 'left', 4, 2),
+    w(88, 'peacekeeper', 'south', 4, 2),
+    w(100, 'riot', 'left', 2, 4),
+    w(102, 'riot', 'south', 2, 4),
+    w(115, 'cleric', 'north'),
+  ],
+  lives: 10,
+  startDp: 14,
+  dpPerSecond: 1,
+  deployLimit: 7,
+  squad: FULL_SQUAD,
+};
+
+const LEVEL_8: LevelDef = {
+  id: 'l8',
+  map: [
+    '################',
+    'S..............B',
+    '#HHHH.HHHH.HHHH#',
+    '#HHHH.HHHH.HHHH#',
+    '#HHHH.HHHH.HHHH#',
+    'S..............B',
+    '################',
+  ],
+  routes: [
+    { id: 'top', spawn: [0, 1], base: [15, 1] },
+    { id: 'bottom', spawn: [0, 5], base: [15, 5] },
+    { id: 'airTop', spawn: [0, 1], base: [15, 1], flying: true },
+    { id: 'airBottom', spawn: [0, 5], base: [15, 5], flying: true },
+  ],
+  waves: [
+    w(3, 'peacekeeper', 'top', 4, 2.5),
+    w(8, 'peacekeeper', 'bottom', 4, 2.5),
+    w(25, 'riot', 'top', 2, 5),
+    w(28, 'riot', 'bottom', 2, 5),
+    w(42, 'hound', 'top', 4, 1.2),
+    w(45, 'hound', 'bottom', 4, 1.2),
+    w(58, 'executor', 'top'),
+    w(62, 'rifleman', 'bottom', 3, 3),
+    w(72, 'gunship', 'airTop', 2, 4),
+    w(74, 'gunship', 'airBottom', 2, 4),
+    w(85, 'executor', 'bottom'),
+    w(90, 'peacekeeper', 'top', 5, 1.5),
+    w(92, 'peacekeeper', 'bottom', 5, 1.5),
+    w(110, 'riot', 'top', 2, 4),
+    w(112, 'riot', 'bottom', 2, 4),
+  ],
+  lives: 10,
+  startDp: 18,
+  dpPerSecond: 1,
+  deployLimit: 7,
+  squad: FULL_SQUAD,
+};
+
+const LEVEL_9: LevelDef = {
+  id: 'l9',
+  map: [
+    'S######hh######S',
+    '#HH.HHH##HHH.HH#',
+    '#HH.HHHhhHHH.HH#',
+    'S.......B......S',
+    '#HH.HHHhhHHH.HH#',
+    '#HH.HHH##HHH.HH#',
+    'S######hh######S',
+  ],
+  routes: [
+    { id: 'west', spawn: [0, 3], base: [8, 3] },
+    { id: 'east', spawn: [15, 3], base: [8, 3] },
+    { id: 'airNW', spawn: [0, 0], base: [8, 3], flying: true },
+    { id: 'airNE', spawn: [15, 0], base: [8, 3], flying: true },
+    { id: 'airSW', spawn: [0, 6], base: [8, 3], flying: true },
+    { id: 'airSE', spawn: [15, 6], base: [8, 3], flying: true },
+  ],
+  waves: [
+    w(5, 'peacekeeper', 'west', 3, 3),
+    w(10, 'peacekeeper', 'east', 3, 3),
+    w(22, 'hound', 'west', 3, 1),
+    w(24, 'hound', 'east', 3, 1),
+    w(40, 'gunship', 'airNW'),
+    w(43, 'gunship', 'airSE'),
+    w(50, 'riot', 'west', 2, 5),
+    w(52, 'riot', 'east', 2, 5),
+    w(65, 'drone', 'airNW', 3, 2),
+    w(66, 'drone', 'airSE', 3, 2),
+    w(75, 'rifleman', 'west', 2, 3),
+    w(77, 'rifleman', 'east', 2, 3),
+    w(90, 'executor', 'west'),
+    w(92, 'executor', 'east'),
+    w(100, 'peacekeeper', 'west', 4, 2),
+    w(102, 'peacekeeper', 'east', 4, 2),
+    w(115, 'gunship', 'airNW', 2, 3),
+    w(116, 'gunship', 'airSE', 2, 3),
+  ],
+  lives: 10,
+  startDp: 20,
+  dpPerSecond: 1,
+  deployLimit: 8,
+  squad: FULL_SQUAD,
+};
+
+const LEVEL_10: LevelDef = {
+  id: 'l10',
+  map: [
+    '################',
+    'S.........,HH###',
+    '#HHHHHHHHH,HHH##',
+    'S..........,...B',
+    '#HHHHHHHHH,HHH##',
+    'S.........,HH###',
+    '################',
+  ],
+  routes: [
+    { id: 'top', spawn: [0, 1], base: [15, 3] },
+    { id: 'mid', spawn: [0, 3], base: [15, 3] },
+    { id: 'bottom', spawn: [0, 5], base: [15, 3] },
+    { id: 'airTop', spawn: [0, 1], base: [15, 3], flying: true },
+    { id: 'airBottom', spawn: [0, 5], base: [15, 3], flying: true },
+  ],
+  waves: [
+    w(3, 'peacekeeper', 'mid', 4, 2.5),
+    w(10, 'peacekeeper', 'top', 3, 3),
+    w(12, 'peacekeeper', 'bottom', 3, 3),
+    w(28, 'hound', 'mid', 6, 0.8),
+    w(40, 'riot', 'top', 2, 5),
+    w(42, 'riot', 'bottom', 2, 5),
+    w(55, 'gunship', 'airTop', 2, 3),
+    w(57, 'gunship', 'airBottom', 2, 3),
+    w(65, 'executor', 'mid'),
+    w(75, 'rifleman', 'top', 3, 3),
+    w(77, 'rifleman', 'bottom', 3, 3),
+    w(90, 'cleric', 'mid'),
+    w(95, 'peacekeeper', 'top', 4, 2),
+    w(97, 'peacekeeper', 'bottom', 4, 2),
+    w(110, 'executor', 'top'),
+    w(112, 'executor', 'bottom'),
+    w(125, 'drone', 'airTop', 4, 1.5),
+    w(140, 'cleric', 'top'),
+    w(142, 'cleric', 'bottom'),
+  ],
+  lives: 10,
+  startDp: 15,
+  dpPerSecond: 1,
+  deployLimit: 8,
+  squad: FULL_SQUAD,
+};
+
+export const LEVELS: readonly LevelDef[] = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7, LEVEL_8, LEVEL_9, LEVEL_10];
 
 export function getLevel(id: string): LevelDef {
   const level = LEVELS.find((l) => l.id === id);
