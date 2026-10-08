@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { idealOperators } from '../src/data/counters';
 import { ENEMIES } from '../src/data/enemies';
@@ -26,5 +27,12 @@ describe('content', () => {
       if (!enemy.weak?.length && !enemy.burn) continue;
       expect(idealOperators(enemy, FULL_SQUAD).length, enemy.id).toBeGreaterThan(0);
     }
+  });
+
+  it('the art guide lists every operator, enemy and biome in use', () => {
+    const guide = readFileSync('docs/ART_GUIDE.md', 'utf8');
+    for (const id of Object.keys(OPERATORS)) expect(guide.includes(`\`op_${id}\``), id).toBe(true);
+    for (const id of Object.keys(ENEMIES)) expect(guide.includes(`\`en_${id}\``), id).toBe(true);
+    for (const biome of new Set(LEVELS.map((l) => l.biome))) expect(guide.includes(`\`${biome}\``), biome).toBe(true);
   });
 });
