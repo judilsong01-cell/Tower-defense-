@@ -4,7 +4,9 @@ import Phaser from 'phaser';
 import { COLORS, GAME_H, GAME_W, ZOOM } from './config';
 import { BattleScene } from './game/scenes/BattleScene';
 import { BootScene } from './game/scenes/BootScene';
+import { HomeScene } from './game/scenes/HomeScene';
 import { MenuScene } from './game/scenes/MenuScene';
+import { SquadScene } from './game/scenes/SquadScene';
 
 async function start(): Promise<void> {
   // Canvas text needs the web font loaded before the first frame, or it falls back to a system font.
@@ -27,7 +29,7 @@ async function start(): Promise<void> {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     input: { activePointers: 2 },
-    scene: [BootScene, MenuScene, BattleScene],
+    scene: [BootScene, HomeScene, MenuScene, SquadScene, BattleScene],
   });
 }
 

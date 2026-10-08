@@ -28,7 +28,7 @@ export class BootScene extends Phaser.Scene {
     this.load.once('complete', () => {
       createPlaceholderTextures(this);
       createManifestAnims(this, manifest);
-      this.scene.start('Menu');
+      this.scene.start('Home');
     });
     this.load.start();
   }

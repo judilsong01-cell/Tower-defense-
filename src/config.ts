@@ -1,9 +1,25 @@
+/**
+ * Logical width that fills the screen's aspect ratio at a fixed logical height of 360,
+ * so wide phones (20:9 and up) use the whole display instead of showing black bars.
+ * Phones use the physical screen shape (the app runs full screen, in landscape); desktop
+ * browsers use the window. Ranges from 640 (16:9) to 864 (2.4:1).
+ */
+function logicalWidth(): number {
+  if (typeof window === 'undefined') return 640;
+  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  const w = touch ? Math.max(screen.width, screen.height) : window.innerWidth;
+  const h = touch ? Math.min(screen.width, screen.height) : window.innerHeight;
+  const aspect = w > 0 && h > 0 ? w / h : 16 / 9;
+  const width = Math.min(864, Math.max(640, 360 * aspect));
+  return 2 * Math.round(width / 2);
+}
+
 // Logical resolution used by all game and UI coordinates.
-export const GAME_W = 640;
+export const GAME_W = logicalWidth();
 export const GAME_H = 360;
 /**
  * The canvas is ZOOM times the logical size and every camera zooms in by ZOOM, so game code
- * keeps working in 640x360 units while smooth art (the 3D characters) renders at full detail.
+ * keeps working in GAME_W x 360 units while smooth art (the 3D characters) renders at full detail.
  */
 export const ZOOM = 2;
 export const TILE = 32;

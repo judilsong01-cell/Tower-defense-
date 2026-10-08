@@ -113,3 +113,31 @@ export class Button extends Phaser.GameObjects.Container {
     this.label.setColor(this.enabled ? CSS.text : '#5a5d66');
   }
 }
+
+/** An invisible tap area (top-left anchored) that calls back on a clean tap. */
+export function tapZone(scene: Phaser.Scene, x: number, y: number, w: number, h: number, onTap: () => void): Phaser.GameObjects.Zone {
+  const zone = scene.add.zone(x, y, w, h).setOrigin(0, 0).setInteractive();
+  let down = false;
+  zone.on('pointerdown', () => (down = true));
+  zone.on('pointerout', () => (down = false));
+  zone.on('pointerup', () => {
+    if (down) onTap();
+    down = false;
+  });
+  return zone;
+}
+
+/** Slanted menu panel in the style of the main menu tiles (left edge leans right). */
+export function slantPanel(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, fill: number, alpha = 1, slant = 10): void {
+  g.fillStyle(fill, alpha).fillPoints(
+    [new Phaser.Math.Vector2(x + slant, y), new Phaser.Math.Vector2(x + w, y), new Phaser.Math.Vector2(x + w, y + h), new Phaser.Math.Vector2(x, y + h)],
+    true,
+  );
+}
+
+/** Small padlock drawn with graphics, centred at (x, y). */
+export function lockIcon(g: Phaser.GameObjects.Graphics, x: number, y: number, color: number = COLORS.textDim): void {
+  g.lineStyle(2, color, 1).beginPath().arc(x, y - 3, 4, Math.PI, 0).strokePath();
+  g.fillStyle(color, 1).fillRect(x - 6, y - 2, 12, 9);
+  g.fillStyle(COLORS.bg, 1).fillRect(x - 1, y + 1, 2, 3);
+}

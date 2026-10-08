@@ -13,7 +13,7 @@ export const PITCH = (46 * Math.PI) / 180;
 export const D = 1 / Math.sin(PITCH);
 export const LIFT = Math.cos(PITCH);
 export const H_HIGH = 0.45;              // high ground height (world units)
-export const MARGIN = { l: 3, r: 3, t: 1.5, b: 3.5 }; // extra tiles rendered around the map
+export const MARGIN = { l: 7, r: 7, t: 1.5, b: 3.5 }; // extra tiles rendered around the map
 
 // ---- helpers ---------------------------------------------------------------
 export function hash(x, y, k = 0) {

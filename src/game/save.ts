@@ -14,6 +14,8 @@ export interface SaveData {
   lang?: Lang;
   autoSkill: boolean;
   levels: Record<string, LevelProgress>;
+  /** Operator ids chosen in the squad screen, in deck order. Missing: the default squad. */
+  squad?: string[];
   replays: Record<string, ReplayData & { stars: number }>;
 }
 

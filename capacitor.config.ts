@@ -8,6 +8,14 @@ const config: CapacitorConfig = {
   android: {
     backgroundColor: '#0e0f12',
   },
+  plugins: {
+    // Full-screen game: never pad the WebView for system bars or the camera cutout
+    // (MainActivity hides the bars and draws under the cutout).
+    SystemBars: {
+      insetsHandling: 'disable',
+      hidden: true,
+    },
+  },
 };
 
 export default config;

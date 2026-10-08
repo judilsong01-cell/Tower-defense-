@@ -12,9 +12,10 @@ import { pose } from './anim.js';
 const params = new URLSearchParams(location.search);
 const id = params.get('id');
 const PX = +(params.get('px') || 160);          // frame size in pixels
-const VIEW = (3.6 * PX) / 160;                  // world units visible (same scale for any frame size)
+const ZOOMF = +(params.get('zoom') || 1);       // >1: same framing as px/zoom, rendered with more detail
+const VIEW = (3.6 * PX) / 160 / ZOOMF;          // world units visible (same scale for any frame size)
 const PITCH = 0.42;                             // camera looks down ~24 degrees
-const FEET = (PX - 12) / PX;                    // feet sit 12 px above the bottom edge
+const FEET = (PX - 12 * ZOOMF) / PX;            // feet sit 12 px (x zoom) above the bottom edge
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(1);

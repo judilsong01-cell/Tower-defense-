@@ -54,8 +54,8 @@ estilo das personagens. Para os alterar, edita `tools/models3d/map3d.js` (biomas
 exportar (ver `tools/models3d/README.md`). Pré-visualização: `docs/art-preview/mapas3d_todos.jpg`.
 
 Se quiseres substituir o mapa de um estágio por arte tua, guarda uma imagem com o mesmo nome e formato:
-64 px por casa, com 3 casas de margem à esquerda e à direita, 1,5 em cima e 3,5 em baixo
-(ex.: mapa de 14×7 casas → imagem de 20×12 casas = 1280×768 px). Plataformas (`H`/`h`) devem aparecer
+64 px por casa, com 7 casas de margem à esquerda e à direita (para ecrãs largos), 1,5 em cima e 3,5 em baixo
+(ex.: mapa de 14×7 casas → imagem de 28×12 casas = 1792×768 px). Plataformas (`H`/`h`) devem aparecer
 10 px (do jogo) acima da casa.
 
 #### Casas 2D (opcional, só se faltar a imagem do mapa)

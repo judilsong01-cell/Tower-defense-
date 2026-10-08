@@ -501,3 +501,29 @@ export function createManifestAnims(scene: Phaser.Scene, manifest: Manifest | un
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// High-detail operator portraits (idle animation) for the menus, loaded on demand.
+
+/** Frame layout of public/assets/units/portrait/<id>.png (see tools/models3d/build_portraits.py). */
+export const PORTRAIT = { frameWidth: 360, frameHeight: 320, originY: 284 / 320, modelHeight: 285 } as const;
+
+/** Loads an operator's portrait sheet once and calls back with its texture key (not called if missing). */
+export function loadPortrait(scene: Phaser.Scene, id: string, done: (key: string) => void): void {
+  const key = `por_${id}`;
+  const ready = () => {
+    if (!scene.textures.exists(key)) return;
+    scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    if (!scene.anims.exists(`${key}:idle`)) {
+      scene.anims.create({ key: `${key}:idle`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 7 }), frameRate: 8, repeat: -1 });
+    }
+    done(key);
+  };
+  if (scene.textures.exists(key)) {
+    ready();
+    return;
+  }
+  scene.load.spritesheet(key, `assets/units/portrait/${id}.png`, { frameWidth: PORTRAIT.frameWidth, frameHeight: PORTRAIT.frameHeight });
+  scene.load.once(`filecomplete-spritesheet-${key}`, ready);
+  if (!scene.load.isLoading()) scene.load.start();
+}

@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 import { COLORS, CSS, GAME_H, GAME_W, TILE, ZOOM } from '../../config';
 import { idealOperators } from '../../data/counters';
-import { getLevel, LEVELS } from '../../data/levels';
+import { getLevel, levelLabel, LEVELS } from '../../data/levels';
 import type { Dir, LevelDef } from '../../data/types';
 import { t, type StringKey } from '../../i18n';
 import { AutoDeployer } from '../../sim/ai';
 import { Battle, DT, type BattleEvent, type EnemyUnit, type OperatorUnit } from '../../sim/battle';
 import { rangeTiles, type TileKind } from '../../sim/grid';
 import { dataVersion, ReplayPlayer, ReplayRecorder } from '../../sim/replay';
+import { isUnlocked, playerSquad, withSquad } from '../progress';
 import { loadSave, session, writeSave } from '../save';
 import { Button, panel, text } from '../ui/widgets';
 import { tileTextureKey, unitMeta } from '../art';
@@ -27,7 +28,7 @@ type UiState =
   | { kind: 'selected'; op: string }
   | { kind: 'enemy'; uid: number };
 
-/** Pointer position in logical (640x360) screen units. */
+/** Pointer position in logical (GAME_W x GAME_H) screen units. */
 interface Pt {
   x: number;
   y: number;
@@ -82,7 +83,7 @@ const TILE_TEXTURE: Record<TileKind, string> = {
  * Each image covers the map plus a margin of tiles around it, at PPU image pixels per tile.
  * High ground is drawn raised, so units and highlights on it are lifted by LIFT pixels.
  */
-const MAP3D = { ppu: 64, marginLeft: 3, marginTop: 1.5, lift: 10 };
+const MAP3D = { ppu: 64, marginLeft: 7, marginTop: 1.5, lift: 10 };
 
 const DIR_ANGLE: Record<Dir, number> = { right: 0, down: 90, left: 180, up: 270 };
 const DIR_VEC: Record<Dir, [number, number]> = { right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1] };
@@ -142,7 +143,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   init(data: BattleSceneData): void {
-    this.level = getLevel(data.levelId);
+    // Every stage is played with the squad chosen in the squad screen.
+    this.level = withSquad(getLevel(data.levelId), playerSquad(loadSave().squad));
     session.selectedLevel = this.level.id;
     this.mode = data.mode;
     this.speedIndex = 0;
@@ -1135,7 +1137,9 @@ export class BattleScene extends Phaser.Scene {
     text(this, GAME_W / 2, 178, t('result.stats', { k: b.killed, t: b.totalEnemies, l: b.lives }), { align: 'center', color: CSS.dim }).setDepth(5001);
     if (replaySaved) text(this, GAME_W / 2, 194, t('result.replaySaved'), { align: 'center', color: CSS.gold }).setDepth(5001);
     const index = LEVELS.findIndex((l) => l.id === this.level.id);
-    const next = won ? LEVELS[index + 1] : undefined;
+    const after = won ? LEVELS[index + 1] : undefined;
+    const next = after && isUnlocked(after.id, loadSave().levels) ? after : undefined;
+    if (after && !next) text(this, GAME_W / 2, replaySaved ? 194 + 12 : 194, t('stage.locked', { l: levelLabel(this.level) }), { align: 'center', color: CSS.gold }).setDepth(5001);
     const buttons: [string, () => void][] = [[t('result.retry'), () => this.scene.restart({ levelId: this.level.id, mode: this.initialMode() })]];
     if (next) buttons.push([t('result.next'), () => this.scene.restart({ levelId: next.id, mode: 'manual' })]);
     buttons.push([t('result.menu'), () => this.scene.start('Menu')]);
