@@ -12,4 +12,17 @@ Personagens chibi construídas com three.js a partir de formas simples, com somb
 Para ver: na pasta `tools/models3d`, `npm install three@0.180.0`, `python3 -m http.server 8765` e abre
 `http://localhost:8765/render.html?id=brasa`.
 
-Estado: **modelos aprovados**; animações em `docs/art-preview/animacoes_*.gif` para aprovação.
+## Exportar para o jogo
+
+```bash
+cd tools/models3d
+npm install three@0.180.0
+python3 -m http.server 8765 &      # noutro terminal
+node export.mjs                    # frames 192x192 em export/ (precisa de Playwright)
+python3 build_sheets.py            # folhas em public/assets/units/ + manifest.json
+```
+
+`sheet.html` usa uma câmara ortográfica fixa, igual para todos, por isso os tamanhos ficam coerentes.
+Cada folha tem 2 linhas de 8 frames: operadores `idle` + `attack`, inimigos `move` + `attack`.
+
+Estado: **modelos e animações aprovados e no jogo**.

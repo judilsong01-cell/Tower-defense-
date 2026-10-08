@@ -5,7 +5,7 @@ Tower defense em pixel art inspirado nas mecânicas do Arknights, num mundo dist
 
 Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** para a Google Play) com **Capacitor**.
 
-## Estado atual (v0.3)
+## Estado atual (v0.4)
 
 - **30 estágios em 3 capítulos**:
   - Capítulo 1 *Concórdia*: os 10 estágios iniciais.
@@ -14,6 +14,9 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
 - **Mapas grandes com scroll** (até 24×13 casas): arrasta o mapa com o dedo ou usa a roda do rato. Ao arrastar uma carta para a borda, o mapa desliza. Pontos vermelhos na borda indicam inimigos fora do ecrã.
 - **Fraquezas**: cada operador tem um tipo de dano (Lâmina, Impacto, Perfuração, Antiaéreo, Explosivo, Cura) e cada inimigo tem um operador ideal. Ver [docs/DESIGN.md](docs/DESIGN.md#fraquezas).
 - 8 operadores e 12 inimigos. Toca num inimigo em batalha, ou no menu do estágio, para ver a fraqueza dele e o operador ideal.
+- **Personagens 3D animadas**: os 20 bonecos são modelos 3D (estilo chibi, sombreado cartoon) exportados como animações
+  (operadores: espera e ataque; inimigos: andar/correr/pairar/rolar e ataque). Fonte em `tools/models3d/`.
+- O jogo corre a 1280×720 (o dobro de antes) para os bonecos aparecerem lisos; mapas e interface mantêm o estilo atual.
 - Biomas placeholder por estágio (cidade, floresta, deserto, gelo, lava, pântano, céu, mar, ruínas, estação, desfiladeiro, caverna).
 - Mecânicas: chão/plataforma, bloqueio, DP, direção de ataque, skills com SP, retirar (devolve 50% do DP),
   redeploy com cooldown e custo crescente, limite de unidades, vidas e 3 estrelas

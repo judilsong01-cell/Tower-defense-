@@ -31,44 +31,21 @@ do browser. Assim podes ir substituindo aos poucos.
 
 ## Lista completa
 
-**Total: 97 imagens (20 delas são sprite sheets animadas) + ícone da app + splash.** Marca `[x]` à medida que fores fazendo.
+**Por fazer: 77 imagens + ícone da app + splash** (as 20 personagens já estão feitas em 3D). Marca `[x]` à medida que fores fazendo.
 
-### 1. Operadores: 8 sprite sheets de 32×32 por frame
+### 1 e 2. Operadores e inimigos: **já feitos (3D)**
 
-Cada operador precisa de duas animações, na mesma sheet: `idle` (em loop) e `attack` (toca uma vez e volta a `idle`).
-Sugestão: 4 frames de `idle` + 3 de `attack` = **sheet de 224×32 px**.
+Os 8 operadores e os 12 inimigos já têm arte final: modelos 3D animados, exportados para
+`public/assets/units/` (folhas de 192×192 por frame, mostradas a 50% no jogo). Para os alterar, edita
+`tools/models3d/models.js` (forma) ou `anim.js` (animação) e volta a exportar (ver `tools/models3d/README.md`).
 
-| ✓ | Chave | Nome | Classe | Onde fica | Como desenhar |
-| --- | --- | --- | --- | --- | --- |
-| [ ] | `op_brasa` | Brasa | Vanguard | Chão | Cabelo ruivo, casaco escuro, espada; ataque de corte |
-| [ ] | `op_faisca` | Faísca | Vanguard | Chão | Cabelo loiro, detalhes laranja, lâmina curta; rápida |
-| [ ] | `op_muralha` | Muralha | Defender | Chão | Armadura cinzenta pesada, escudo grande; golpe de escudo |
-| [ ] | `op_bastiao` | Bastião | Defender | Chão | Armadura castanha, escudo e maça; mais ofensivo que a Muralha |
-| [ ] | `op_lirio` | Lírio | Medic | Plataforma | Bata branca, cruz vermelha, mala médica; "ataque" = gesto de cura |
-| [ ] | `op_corvo` | Corvo | Sniper | Plataforma | Todo de preto, cachecol vermelho, espingarda; disparo |
-| [ ] | `op_falcao` | Falcão | Sniper anti-aéreo | Plataforma | Cabelo grisalho, espingarda apontada para cima |
-| [ ] | `op_trovao` | Trovão | Sniper de artilharia | Plataforma | Casaco verde-oliva, lança-granadas ao ombro |
+Se preferires substituir algum por arte tua, usa a mesma chave (`op_<id>` / `en_<id>`) no manifest, com
+`frameWidth`/`frameHeight`, `scale`, `originY` (onde ficam os pés, de 0 a 1) e `top` (altura do boneco em
+píxeis do frame, usada nas barras de vida).
 
-Os operadores também aparecem nas **cartas do deck**, onde se usa a primeira frame.
-
-### 2. Inimigos: 12 sprite sheets de 32×32 por frame
-
-Cada inimigo precisa de uma animação `move` (em loop). Sugestão: 4 frames = **sheet de 128×32 px**.
-
-| ✓ | Chave | Nome | Como desenhar | Nota |
-| --- | --- | --- | --- | --- |
-| [ ] | `en_peacekeeper` | Pacificador | Uniforme cinzento claro, capacete com viseira, bastão | Soldado básico |
-| [ ] | `en_hound` | Cão de Patrulha | Cão magro e escuro, olhos azul gelo, a correr | Rápido |
-| [ ] | `en_riot` | Escudo de Choque | Armadura preta, escudo transparente grande à frente | Lento |
-| [ ] | `en_rifleman` | Fuzileiro | Uniforme cinzento, espingarda | Dispara à distância |
-| [ ] | `en_drone` | Drone de Vigilância | Drone branco com lente | **Aéreo**: desenha-o a "flutuar"; o jogo põe a sombra |
-| [ ] | `en_gunship` | Drone de Assalto | Drone escuro e blindado, lente vermelha, armas | **Aéreo** |
-| [ ] | `en_executor` | Executor | Armadura negra pesada, martelo enorme | Muito lento |
-| [ ] | `en_incinerator` | Incinerador | Fato castanho, lança-chamas com chama laranja | Queima livros (e operadores) |
-| [ ] | `en_infiltrator` | Infiltrado | Fato escuro justo, faca, contorno discreto | Camuflado |
-| [ ] | `en_medic` | Enfermeiro do Regime | Uniforme branco, cruz azul gelo | Cura inimigos |
-| [ ] | `en_armored` | Blindado | Veículo blindado com torre | Ocupa a casa toda, pode ir até à borda |
-| [ ] | `en_cleric` | Clérigo | Casaco negro comprido, gola branca, duas pistolas | **Boss**: o jogo desenha-o a 125% |
+| Operadores | Inimigos |
+| --- | --- |
+| `op_brasa`, `op_faisca`, `op_muralha`, `op_bastiao`, `op_lirio`, `op_corvo`, `op_falcao`, `op_trovao` | `en_peacekeeper`, `en_hound`, `en_riot`, `en_rifleman`, `en_drone`, `en_gunship`, `en_executor`, `en_incinerator`, `en_infiltrator`, `en_medic`, `en_armored`, `en_cleric` |
 
 ### 3. Casas do mapa: 32×32, sem animação
 
@@ -150,10 +127,9 @@ Depois gera todos os tamanhos com `npx @capacitor/assets generate --android`.
 
 Para veres diferença mais depressa:
 
-1. **Os 8 operadores** e os **12 inimigos**: é o que mais se vê.
-2. As **3 casas comuns** e as **5 casas de `city`**, usadas em 12 estágios.
-3. Os biomas pela ordem dos estágios: `lava`, `forest`, `sea`, `canyon`, `desert`, `swamp`, `ice`, `ruins`, `tech`, `sky`, `cave`.
-4. Ícones, efeitos, ícone da app e splash.
+1. As **3 casas comuns** e as **5 casas de `city`**, usadas em 12 estágios.
+2. Os biomas pela ordem dos estágios: `lava`, `forest`, `sea`, `canyon`, `desert`, `swamp`, `ice`, `ruins`, `tech`, `sky`, `cave`.
+3. Ícones, efeitos, ícone da app e splash.
 
 ---
 

@@ -1,4 +1,765 @@
 {
-  "_readme": "Lista aqui a tua arte. Cada chave substitui o placeholder com o mesmo nome. Ver docs/ART_GUIDE.md.",
-  "sprites": {}
+  "_readme": "Lista aqui a arte. Cada chave substitui o placeholder com o mesmo nome. op_*/en_* são os bonecos 3D exportados por tools/models3d (ver docs/ART_GUIDE.md).",
+  "sprites": {
+    "op_brasa": {
+      "file": "units/brasa.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "op_faisca": {
+      "file": "units/faisca.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 92,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "op_muralha": {
+      "file": "units/muralha.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "op_bastiao": {
+      "file": "units/bastiao.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "op_lirio": {
+      "file": "units/lirio.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "op_corvo": {
+      "file": "units/corvo.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "op_falcao": {
+      "file": "units/falcao.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "op_trovao": {
+      "file": "units/trovao.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 8
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 16
+        }
+      }
+    },
+    "en_peacekeeper": {
+      "file": "units/peacekeeper.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 87,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_hound": {
+      "file": "units/hound.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 56,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_riot": {
+      "file": "units/riot.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 87,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_rifleman": {
+      "file": "units/rifleman.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 87,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_drone": {
+      "file": "units/drone.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 80,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_gunship": {
+      "file": "units/gunship.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 80,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_executor": {
+      "file": "units/executor.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 112,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_incinerator": {
+      "file": "units/incinerator.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 85,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_infiltrator": {
+      "file": "units/infiltrator.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 85,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_medic": {
+      "file": "units/medic.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 87,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_armored": {
+      "file": "units/armored.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 57,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    },
+    "en_cleric": {
+      "file": "units/cleric.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "scale": 0.5,
+      "originY": 0.9375,
+      "top": 91,
+      "smooth": true,
+      "baked": true,
+      "anims": {
+        "move": {
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 10
+        },
+        "attack": {
+          "frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "fps": 14
+        }
+      }
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, CSS, GAME_H, GAME_W, TILE } from '../../config';
+import { COLORS, CSS, GAME_H, GAME_W, TILE, ZOOM } from '../../config';
 import { idealOperators } from '../../data/counters';
 import { getLevel, LEVELS } from '../../data/levels';
 import type { Dir, LevelDef } from '../../data/types';
@@ -10,7 +10,7 @@ import { rangeTiles, type TileKind } from '../../sim/grid';
 import { dataVersion, ReplayPlayer, ReplayRecorder } from '../../sim/replay';
 import { loadSave, session, writeSave } from '../save';
 import { Button, panel, text } from '../ui/widgets';
-import { tileTextureKey } from '../art';
+import { tileTextureKey, unitMeta } from '../art';
 
 export type BattleMode = 'manual' | 'replay' | 'ai';
 
@@ -26,6 +26,14 @@ type UiState =
   | { kind: 'direction'; op: string; x: number; y: number; dir: Dir; gesture: boolean; downX: number; downY: number }
   | { kind: 'selected'; op: string }
   | { kind: 'enemy'; uid: number };
+
+/** Pointer position in logical (640x360) screen units. */
+interface Pt {
+  x: number;
+  y: number;
+  isDown: boolean;
+}
+const logical = (p: Phaser.Input.Pointer): Pt => ({ x: p.x / ZOOM, y: p.y / ZOOM, isDown: p.isDown });
 
 interface Driver {
   update(battle: Battle): void;
@@ -138,6 +146,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setOrigin(0, 0).setZoom(ZOOM);
+    this.events.once('shutdown', () => (this.anims.globalTimeScale = 1));
     this.battle = new Battle(this.level);
     this.recorder = new ReplayRecorder(this.battle);
     const save = loadSave();
@@ -177,15 +187,15 @@ export class BattleScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (over.length === 0) this.onDown(p);
+      if (over.length === 0) this.onDown(logical(p));
     });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(logical(p)));
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _o: unknown, dx: number, dy: number) => {
       const [x, y] = this.clampScroll(this.cameras.main.scrollX + dx * 0.5, this.cameras.main.scrollY + dy * 0.5);
       this.cameras.main.setScroll(x, y);
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (over.length === 0 || this.pan || this.state.kind === 'direction' || this.state.kind === 'drag') this.onUp(p);
+      if (over.length === 0 || this.pan || this.state.kind === 'direction' || this.state.kind === 'drag') this.onUp(logical(p));
     });
   }
 
@@ -212,6 +222,7 @@ export class BattleScene extends Phaser.Scene {
       this.resultShown = true;
       this.time.delayedCall(700, () => this.showResult());
     }
+    this.anims.globalTimeScale = this.menuPaused ? 0 : this.placing ? 0.25 : SPEEDS[this.speedIndex];
     this.autoScroll();
     this.syncUnits();
     this.drawOverlay();
@@ -240,8 +251,19 @@ export class BattleScene extends Phaser.Scene {
     return this.battle.grid.inBounds(x, y) ? [x, y] : null;
   }
 
+  /** World point under a logical screen position. */
   private toWorld(screenX: number, screenY: number): Phaser.Math.Vector2 {
-    return this.cameras.main.getWorldPoint(screenX, screenY);
+    return this.cameras.main.getWorldPoint(screenX * ZOOM, screenY * ZOOM);
+  }
+
+  /** Applies a unit texture's scale and feet anchor; remembers its height for bars and effects. */
+  private placeUnit<T extends Phaser.GameObjects.Image | Phaser.GameObjects.Sprite>(obj: T, key: string, extraScale = 1): T {
+    const m = unitMeta(this, key);
+    if (obj.texture.key !== key) obj.setTexture(key, 0);
+    obj.setOrigin(0.5, m.originY).setScale(m.scale * extraScale);
+    obj.setData('h', m.height * extraScale);
+    obj.setData('baked', m.baked);
+    return obj;
   }
 
   /** Keeps the map inside the view: centred when it fits, scrollable when it does not. */
@@ -258,7 +280,7 @@ export class BattleScene extends Phaser.Scene {
   /** While dragging a card near the screen edge, scroll the map so far tiles can be reached. */
   private autoScroll(): void {
     if (this.state.kind !== 'drag' || !this.state.moved) return;
-    const p = this.input.activePointer;
+    const p = logical(this.input.activePointer);
     const margin = 28;
     let dx = 0;
     let dy = 0;
@@ -294,7 +316,7 @@ export class BattleScene extends Phaser.Scene {
     return null;
   }
 
-  private onDown(p: Phaser.Input.Pointer): void {
+  private onDown(p: Pt): void {
     if (this.resultShown || this.menuPaused) return;
     const s = this.state;
     if (s.kind === 'direction') {
@@ -315,7 +337,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** A tap on the map (not a pan): deploy target, operator or enemy selection. */
-  private onMapTap(p: Phaser.Input.Pointer): void {
+  private onMapTap(p: Pt): void {
     const s = this.state;
     const tile = this.tileAt(p.x, p.y);
     if (tile && s.kind === 'card' && !this.locked && this.battle.canDeployAt(s.op, tile[0], tile[1])) {
@@ -330,13 +352,14 @@ export class BattleScene extends Phaser.Scene {
     const w = this.toWorld(p.x, p.y);
     let best: { uid: number; d: number } | null = null;
     for (const [uid, v] of this.enemyViews) {
-      const d = Math.hypot(v.sprite.x - w.x, v.sprite.y - 12 - w.y);
-      if (d <= 16 && (!best || d < best.d)) best = { uid, d };
+      const h = (v.sprite.getData('h') as number) ?? 24;
+      const d = Math.hypot(v.sprite.x - w.x, v.sprite.y - h / 2 - w.y);
+      if (d <= Math.max(16, h / 2) && (!best || d < best.d)) best = { uid, d };
     }
     this.state = best ? { kind: 'enemy', uid: best.uid } : { kind: 'idle' };
   }
 
-  private onMove(p: Phaser.Input.Pointer): void {
+  private onMove(p: Pt): void {
     const s = this.state;
     if (this.pan && p.isDown) {
       if (!this.pan.moved && Math.hypot(p.x - this.pan.x, p.y - this.pan.y) > 6) this.pan.moved = true;
@@ -350,7 +373,7 @@ export class BattleScene extends Phaser.Scene {
       if (!s.moved && Math.hypot(p.x - s.startX, p.y - s.startY) > 6) s.moved = true;
       if (s.moved && !this.locked && this.battle.canDeployOperator(s.op)) {
         const tile = this.tileAt(p.x, p.y);
-        this.ghost.setTexture(`op_${s.op}`).setVisible(true);
+        this.placeUnit(this.ghost, `op_${s.op}`).setVisible(true);
         if (tile && this.battle.canDeployAt(s.op, tile[0], tile[1])) {
           const [cx, cy] = this.tileCenter(tile[0], tile[1]);
           this.ghost.setPosition(cx, cy + FEET);
@@ -366,7 +389,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private onUp(p: Phaser.Input.Pointer): void {
+  private onUp(p: Pt): void {
     const s = this.state;
     if (this.pan) {
       const tapped = !this.pan.moved;
@@ -487,7 +510,7 @@ export class BattleScene extends Phaser.Scene {
     const bottom = PANEL_Y - 8;
     for (const v of this.enemyViews.values()) {
       const sx = v.sprite.x - cam.scrollX;
-      const sy = v.sprite.y - 12 - cam.scrollY;
+      const sy = v.sprite.y - ((v.sprite.getData('h') as number) ?? 24) / 2 - cam.scrollY;
       if (sx >= 0 && sx <= GAME_W && sy >= top && sy <= bottom) continue;
       const x = Phaser.Math.Clamp(sx, 6, GAME_W - 6);
       const y = Phaser.Math.Clamp(sy, top, bottom);
@@ -520,7 +543,7 @@ export class BattleScene extends Phaser.Scene {
       const op = entry.def.id;
       const container = this.add.container(0, DECK_Y).setDepth(2000);
       const bg = this.add.graphics();
-      const sprite = this.add.image(CARD_W / 2, CARD_H - 8, `op_${op}`).setOrigin(0.5, 1);
+      const sprite = this.placeUnit(this.add.image(CARD_W / 2, CARD_H - 6, `op_${op}`), `op_${op}`);
       const icon = this.add.image(CARD_W - 7, 7, `icon_${entry.def.cls}`);
       const cost = text(this, 3, 3, String(entry.def.cost));
       const cooldown = text(this, CARD_W / 2, CARD_H / 2 - 4, '', { align: 'center', color: CSS.red });
@@ -690,7 +713,7 @@ export class BattleScene extends Phaser.Scene {
     if (!s) {
       const [cx, cy] = this.tileCenter(unit.x, unit.y);
       const key = `op_${unit.def.id}`;
-      s = this.add.sprite(cx, cy + FEET, key).setOrigin(0.5, 1).setDepth(10 + cy);
+      s = this.placeUnit(this.add.sprite(cx, cy + FEET, key), key).setDepth(10 + cy);
       s.setFlipX(unit.dir === 'left');
       playAnim(s, key, 'idle');
       s.setAlpha(0).setY(cy + FEET - 10);
@@ -704,10 +727,9 @@ export class BattleScene extends Phaser.Scene {
     let v = this.enemyViews.get(e.uid);
     if (!v) {
       const key = `en_${e.def.id}`;
-      const sprite = this.add.sprite(0, 0, key).setOrigin(0.5, 1);
-      if (e.def.boss) sprite.setScale(1.25);
+      const sprite = this.placeUnit(this.add.sprite(0, 0, key), key, e.def.boss ? 1.25 : 1);
       playAnim(sprite, key, 'move');
-      const shadow = e.def.flying ? this.add.image(0, 0, 'fx_shadow').setDepth(6) : null;
+      const shadow = e.def.flying && !sprite.getData('baked') ? this.add.image(0, 0, 'fx_shadow').setDepth(6) : null;
       v = { sprite, shadow, lastX: e.x };
       this.enemyViews.set(e.uid, v);
     }
@@ -732,8 +754,12 @@ export class BattleScene extends Phaser.Scene {
       const v = this.enemyView(e);
       const px = Math.round(e.x * TILE + TILE / 2);
       const ground = Math.round(e.y * TILE + TILE / 2 + FEET);
-      const lift = e.def.flying ? 12 : 0;
+      const lift = e.def.flying && !v.sprite.getData('baked') ? 12 : 0;
       v.sprite.setPosition(px, ground - lift).setDepth(10 + ground);
+      // Stand still (no walking cycle) while blocked; resume when free.
+      const walking = v.sprite.anims.currentAnim?.key.endsWith(':move');
+      if (walking && e.blockedBy !== null && v.sprite.anims.isPlaying) v.sprite.anims.pause();
+      else if (walking && e.blockedBy === null && v.sprite.anims.isPaused) v.sprite.anims.resume();
       if (Math.abs(e.x - v.lastX) > 0.001) v.sprite.setFlipX(e.x < v.lastX);
       v.lastX = e.x;
       v.shadow?.setPosition(px, ground - 2);
@@ -747,7 +773,7 @@ export class BattleScene extends Phaser.Scene {
         v.sprite.destroy();
         continue;
       }
-      this.burst(v.sprite.x, v.sprite.y - 12, 0xffffff, 6);
+      this.burst(v.sprite.x, v.sprite.y - ((v.sprite.getData('h') as number) ?? 24) / 2, 0xffffff, 6);
       this.tweens.add({ targets: v.sprite, alpha: 0, scaleY: 0.2, duration: 220, onComplete: () => v.sprite.destroy() });
     }
   }
@@ -785,6 +811,7 @@ export class BattleScene extends Phaser.Scene {
           const es = this.enemyViews.get(ev.uid)?.sprite;
           const os = this.opViews.get(ev.target);
           if (!es || !os || !ev2) break;
+          playAnim(es, es.texture.key, 'attack');
           if (ev.ranged) this.tracer(es.x, es.y - 16, os.x, os.y - 14, COLORS.regime);
           else this.lunge(es, os.x - es.x, os.y - es.y);
           break;
@@ -932,13 +959,15 @@ export class BattleScene extends Phaser.Scene {
       const def = this.battle.rosterEntry(s.op)!.def;
       this.drawRange(g, rangeTiles(def.range, s.x, s.y, s.dir), 0xffffff);
       const [cx, cy] = this.tileCenter(s.x, s.y);
-      this.ghost.setTexture(`op_${s.op}`).setPosition(cx, cy + FEET).setFlipX(s.dir === 'left').setVisible(true);
+      this.placeUnit(this.ghost, `op_${s.op}`).setPosition(cx, cy + FEET).setFlipX(s.dir === 'left').setVisible(true);
       for (const a of this.arrows) {
         const [vx, vy] = DIR_VEC[a.dir];
-        a.img.setPosition(cx + vx * 28, cy + vy * 28).setVisible(true);
+        // Taller units: keep the up arrow clear of the head.
+        const reach = a.dir === 'up' ? 50 : a.dir === 'down' ? 30 : 32;
+        a.img.setPosition(cx + vx * reach, cy + vy * reach).setVisible(true);
         a.img.setTint(a.dir === s.dir ? COLORS.redLight : 0xffffff).setAlpha(a.dir === s.dir ? 1 : 0.6);
       }
-      this.cancelMark.setPosition(cx + 26, cy - 26).setVisible(true);
+      this.cancelMark.setPosition(cx + 30, cy - 40).setVisible(true);
       this.hint.setVisible(true);
     } else if (s.kind !== 'drag') {
       this.ghost.setVisible(false).setFlipX(false);
@@ -947,7 +976,7 @@ export class BattleScene extends Phaser.Scene {
     if (s.kind === 'enemy') {
       const v = this.enemyViews.get(s.uid);
       if (v) {
-        const h = v.sprite.displayHeight;
+        const h = (v.sprite.getData('h') as number) ?? v.sprite.displayHeight;
         g.lineStyle(1, COLORS.regime, 1).strokeRect(Math.round(v.sprite.x - 14) + 0.5, Math.round(v.sprite.y - h - 2) + 0.5, 28, h + 4);
       }
     }
@@ -990,7 +1019,8 @@ export class BattleScene extends Phaser.Scene {
       const skill = op.def.skill;
       if (op.skillActive) {
         g.fillStyle(COLORS.redLight, 1).fillRect(x, y + 3, Math.round(24 * op.skillTime / skill.duration), 1);
-        g.lineStyle(1, COLORS.redLight, 0.4 + 0.6 * pulse).strokeRect(s.x - 15.5, s.y - 33.5, 31, 35);
+        const h = (s.getData('h') as number) ?? 32;
+        g.lineStyle(1, COLORS.redLight, 0.4 + 0.6 * pulse).strokeRect(s.x - 15.5, s.y - h - 1.5, 31, h + 3);
       } else {
         const ready = op.sp >= skill.spCost;
         g.fillStyle(ready ? (pulse > 0.5 ? 0xffffff : COLORS.sp) : COLORS.sp, 1).fillRect(x, y + 3, Math.round(24 * op.sp / skill.spCost), 1);
@@ -1001,7 +1031,7 @@ export class BattleScene extends Phaser.Scene {
       const v = this.enemyViews.get(e.uid);
       if (!v) continue;
       const w = e.def.boss ? 28 : 20;
-      const top = Math.round(v.sprite.y - v.sprite.displayHeight - 3);
+      const top = Math.round(v.sprite.y - ((v.sprite.getData('h') as number) ?? v.sprite.displayHeight) - 3);
       const x = Math.round(v.sprite.x - w / 2);
       g.fillStyle(0x000000, 1).fillRect(x - 1, top - 1, w + 2, 4);
       g.fillStyle(COLORS.hpEnemy, 1).fillRect(x, top, Math.round(w * Math.max(0, e.hp) / e.maxHp), 2);
@@ -1104,7 +1134,10 @@ function playAnim(s: Phaser.GameObjects.Sprite, texture: string, anim: string): 
   const key = `${texture}:${anim}`;
   if (!s.scene.anims.exists(key)) return;
   s.play(key, anim === 'idle' || anim === 'move');
-  if (anim === 'attack') s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => playAnim(s, texture, 'idle'));
+  if (anim === 'attack') {
+    const back = s.scene.anims.exists(`${texture}:idle`) ? 'idle' : 'move';
+    s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => playAnim(s, texture, back));
+  }
 }
 
 /** Pins a game object to the screen so the camera scroll does not move it. */

@@ -1,7 +1,11 @@
-// Internal resolution. The canvas is scaled to fit the screen with nearest-neighbour
-// filtering, so everything is drawn on this low-res pixel grid.
+// Logical resolution used by all game and UI coordinates.
 export const GAME_W = 640;
 export const GAME_H = 360;
+/**
+ * The canvas is ZOOM times the logical size and every camera zooms in by ZOOM, so game code
+ * keeps working in 640x360 units while smooth art (the 3D characters) renders at full detail.
+ */
+export const ZOOM = 2;
 export const TILE = 32;
 
 export const FONT = '"Press Start 2P", monospace';

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, CSS, FONT } from '../../config';
+import { COLORS, CSS, FONT, ZOOM } from '../../config';
 
 export function text(
   scene: Phaser.Scene,
@@ -16,6 +16,8 @@ export function text(
     lineSpacing: 4,
     wordWrap: opts.wrap ? { width: opts.wrap, useAdvancedWrap: true } : undefined,
   });
+  // Rasterise text at the zoomed resolution so it stays sharp.
+  t.setResolution(ZOOM);
   if (opts.align === 'center') t.setOrigin(0.5, 0);
   if (opts.align === 'right') t.setOrigin(1, 0);
   return t;

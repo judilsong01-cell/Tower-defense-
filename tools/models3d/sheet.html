@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// Fixed orthographic camera shared by every model, so sizes stay consistent in game.
+import * as THREE from 'three';
+import { build } from './models.js';
+import { pose } from './anim.js';
+
+const params = new URLSearchParams(location.search);
+const id = params.get('id');
+const PX = +(params.get('px') || 160);          // frame size in pixels
+const VIEW = (3.6 * PX) / 160;                  // world units visible (same scale for any frame size)
+const PITCH = 0.42;                             // camera looks down ~24 degrees
+const FEET = (PX - 12) / PX;                    // feet sit 12 px above the bottom edge
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(PX, PX);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0x000000, 0);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x3a3440, 1.25));
+const sun = new THREE.DirectionalLight(0xffffff, 2.3);
+sun.position.set(2.5, 5, 4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3 });
+sun.shadow.radius = 3;
+scene.add(sun);
+const rim = new THREE.DirectionalLight(0x9fc8ff, 0.9);
+rim.position.set(-4, 3, -3);
+scene.add(rim);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), new THREE.ShadowMaterial({ opacity: 0.35 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const model = build(id);
+model.rotation.y = 0.55;
+scene.add(model);
+model.traverse((o) => { if (o.isMesh && !o.userData.outline) o.castShadow = true; });
+
+const half = VIEW / 2;
+const camera = new THREE.OrthographicCamera(-half, half, half, -half, 0.1, 50);
+const t = ((FEET - 0.5) * VIEW) / Math.cos(PITCH);   // aim above the feet so they land at FEET
+camera.position.set(0, t + Math.sin(PITCH) * 10, Math.cos(PITCH) * 10);
+camera.lookAt(0, t, 0);
+
+window.frame = (anim, tt) => {
+  pose(model, anim, tt);
+  renderer.render(scene, camera);
+  return renderer.domElement.toDataURL('image/png');
+};
+window.done = true;
+</script></body></html>

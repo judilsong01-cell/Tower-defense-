@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, CSS, GAME_H, GAME_W } from '../../config';
+import { COLORS, CSS, GAME_H, GAME_W, ZOOM } from '../../config';
 import { idealOperators } from '../../data/counters';
 import { ENEMIES } from '../../data/enemies';
 import { CHAPTERS, LEVELS, levelLabel } from '../../data/levels';
@@ -7,6 +7,7 @@ import type { LevelDef } from '../../data/types';
 import { getLang, LANGS, setLang, t, type StringKey } from '../../i18n';
 import { dataVersion } from '../../sim/replay';
 import { loadSave, session, writeSave } from '../save';
+import { unitMeta } from '../art';
 import { Button, panel, text } from '../ui/widgets';
 import type { BattleMode } from './BattleScene';
 
@@ -28,6 +29,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setOrigin(0, 0).setZoom(ZOOM);
     this.detail = [];
     this.chapterObjs = [];
     this.drawSkyline();
@@ -129,7 +131,10 @@ export class MenuScene extends Phaser.Scene {
     const info = add(text(this, x + 14, y + 104, t('menu.tapEnemy'), { color: CSS.dim, wrap: w - 28 }));
     kinds.forEach((id, i) => {
       const ix = x + 26 + i * 36;
-      const img = add(this.add.image(ix, y + 98, `en_${id}`).setOrigin(0.5, 1));
+      const meta = unitMeta(this, `en_${id}`);
+      // Fit every enemy icon into the same ~30 px tall slot.
+      const fit = Math.min(1, 30 / meta.height) * meta.scale;
+      const img = add(this.add.image(ix, y + 98, `en_${id}`).setOrigin(0.5, meta.originY).setScale(fit));
       add(this.add.zone(ix - 16, y + 66, 32, 34).setOrigin(0, 0).setInteractive().on('pointerup', () => {
         const def = ENEMIES[id];
         const ideal = idealOperators(def, level.squad).map((o) => o.name).join(', ');

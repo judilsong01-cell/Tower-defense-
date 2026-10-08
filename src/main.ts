@@ -1,7 +1,7 @@
 import '@fontsource/press-start-2p/latin-400.css';
 import '@fontsource/press-start-2p/latin-ext-400.css';
 import Phaser from 'phaser';
-import { COLORS, GAME_H, GAME_W } from './config';
+import { COLORS, GAME_H, GAME_W, ZOOM } from './config';
 import { BattleScene } from './game/scenes/BattleScene';
 import { BootScene } from './game/scenes/BootScene';
 import { MenuScene } from './game/scenes/MenuScene';
@@ -17,8 +17,8 @@ async function start(): Promise<void> {
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
-    width: GAME_W,
-    height: GAME_H,
+    width: GAME_W * ZOOM,
+    height: GAME_H * ZOOM,
     backgroundColor: COLORS.bg,
     pixelArt: true,
     roundPixels: true,

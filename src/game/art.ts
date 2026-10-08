@@ -13,6 +13,36 @@ export interface ManifestSprite {
   frameWidth?: number;
   frameHeight?: number;
   anims?: Record<string, { frames: number[]; fps: number; repeat?: number }>;
+  /** Display scale in game units (e.g. 0.5 for frames drawn at 2x). Default 1. */
+  scale?: number;
+  /** Vertical anchor of the feet inside the frame (0 top .. 1 bottom). Default 1. */
+  originY?: number;
+  /** Height of the character above its feet, in frame pixels (for health bars). */
+  top?: number;
+  /** Smooth (linear) filtering instead of crisp pixels. */
+  smooth?: boolean;
+  /** The frames already include altitude and shadow (flying units are not lifted again). */
+  baked?: boolean;
+}
+
+/** How a unit texture is placed in the world. */
+export interface UnitMeta {
+  scale: number;
+  originY: number;
+  /** Height above the feet in game units. */
+  height: number;
+  baked: boolean;
+}
+
+const META_KEY = 'spriteMeta';
+
+export function unitMeta(scene: Phaser.Scene, key: string): UnitMeta {
+  const m = (scene.registry.get(META_KEY) as Record<string, ManifestSprite> | undefined)?.[key];
+  if (!m || !scene.textures.exists(key) || !(scene.registry.get(ART_KEYS) as Set<string>).has(key)) {
+    return { scale: 1, originY: 1, height: 32, baked: false };
+  }
+  const scale = m.scale ?? 1;
+  return { scale, originY: m.originY ?? 1, height: (m.top ?? m.frameHeight ?? 32) * scale, baked: !!m.baked };
 }
 
 export interface Manifest {
@@ -437,9 +467,15 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   });
 }
 
+/** Forgets art that failed to load, so its placeholder is used instead. */
+export function dropMissingArt(scene: Phaser.Scene, key: string): void {
+  (scene.registry.get(ART_KEYS) as Set<string> | undefined)?.delete(key);
+}
+
 /** Queues every sprite from the manifest; call from a scene's create() and then start the loader. */
 export function queueManifest(scene: Phaser.Scene, manifest: Manifest | undefined): void {
   scene.registry.set(ART_KEYS, new Set(Object.keys(manifest?.sprites ?? {}).filter((k) => !k.startsWith('_'))));
+  scene.registry.set(META_KEY, manifest?.sprites ?? {});
   for (const [key, s] of Object.entries(manifest?.sprites ?? {})) {
     if (key.startsWith('_')) continue;
     const url = `assets/${s.file}`;
@@ -451,6 +487,7 @@ export function queueManifest(scene: Phaser.Scene, manifest: Manifest | undefine
 /** Registers animations declared in the manifest as `<textureKey>:<animName>`. */
 export function createManifestAnims(scene: Phaser.Scene, manifest: Manifest | undefined): void {
   for (const [key, s] of Object.entries(manifest?.sprites ?? {})) {
+    if (s.smooth && scene.textures.exists(key)) scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
     if (!s.anims || !scene.textures.exists(key)) continue;
     for (const [name, a] of Object.entries(s.anims)) {
       const animKey = `${key}:${name}`;
