@@ -60,6 +60,11 @@ A simulação corre a 30 ticks/s fixos sem aleatoriedade. É isto que permite os
 mesmos ticks dão sempre o mesmo resultado. Se mudares dados de jogo, os replays gravados deixam de ser válidos
 e são descartados automaticamente.
 
+## Testar no celular
+
+Para gerar um APK e instalá-lo no celular (sem servidor, joga offline): `npm run android:apk`.
+Guia passo a passo: [docs/INSTALAR_NO_CELULAR.md](docs/INSTALAR_NO_CELULAR.md).
+
 ## Android / Google Play (futuro)
 
 O jogo está preparado para ser publicado como `.aab`, mas **ainda não é compilado**. Já estão prontos:

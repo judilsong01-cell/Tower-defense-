@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "android:sync": "npm run build && cap sync android",
-    "android:open": "cap open android"
+    "android:open": "cap open android",
+    "android:apk": "npm run android:sync && node scripts/android-apk.mjs",
+    "android:run": "npm run android:sync && node scripts/android-apk.mjs --install"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",

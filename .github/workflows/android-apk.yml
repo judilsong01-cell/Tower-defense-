@@ -1,0 +1,32 @@
+name: Android APK (teste)
+
+# Manual only: Actions -> Android APK (teste) -> Run workflow.
+# Builds the same debug APK as `npm run android:apk` (no .aab) for installing on a phone.
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run android:apk
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: TowerDefense-apk
+          path: TowerDefense.apk
+          if-no-files-found: error
