@@ -25,8 +25,14 @@ o jogo usa o placeholder e escreve um aviso na consola.
 | `tile_high` | Plataforma para unidades à distância. Desenha a "face" de cima nos ~26 px de cima e a lateral em baixo |
 | `tile_high_locked` | Plataforma bloqueada |
 | `tile_wall` | Parede ou vazio |
-| `tile_spawn` | Entrada dos inimigos |
+| `tile_spawn` | Entrada dos inimigos (portal terrestre) |
+| `tile_spawn_air` | Portal só de inimigos aéreos |
 | `tile_base` | Base da Resistência (o que tens de proteger) |
+
+**Biomas:** cada estágio tem um bioma (`city`, `forest`, `desert`, `ice`, `lava`, `swamp`, `sky`, `sea`,
+`ruins`, `tech`, `canyon`, `cave`). Para dar a um bioma arte própria, regista a casa com o sufixo `@bioma`
+(ex.: `tile_ground@forest`, `tile_wall@lava`). Se não existir, usa-se a versão sem sufixo e, se essa também
+não existir, o placeholder colorido do bioma. Os portais e as bases são comuns a todos os biomas.
 
 ### Operadores (32×32 por frame)
 
@@ -34,7 +40,8 @@ o jogo usa o placeholder e escreve um aviso na consola.
 
 ### Inimigos (32×32 por frame)
 
-`en_peacekeeper`, `en_hound`, `en_riot`, `en_rifleman`, `en_drone`, `en_gunship`, `en_executor`, `en_cleric`
+`en_peacekeeper`, `en_hound`, `en_riot`, `en_rifleman`, `en_drone`, `en_gunship`, `en_executor`, `en_incinerator`,
+`en_infiltrator`, `en_medic`, `en_armored`, `en_cleric`
 (o Clérigo é desenhado a 125% no jogo por ser boss).
 
 ### Interface

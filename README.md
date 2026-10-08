@@ -5,12 +5,16 @@ Tower defense em pixel art inspirado nas mecânicas do Arknights, num mundo dist
 
 Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** para a Google Play) com **Capacitor**.
 
-## Estado atual (v0.2)
+## Estado atual (v0.3)
 
-- **10 estágios jogáveis** (1-1 a 1-10), com dificuldade crescente: uma ou várias entradas, ataques aéreos, duas bases e base cercada no centro
-- 8 operadores de 4 classes: Vanguard ×2, Defender ×2, Medic, Sniper ×3 (Bastião e Falcão juntam-se a partir do 1-4)
-- 8 inimigos: Pacificador, Cão de Patrulha, Escudo de Choque, Fuzileiro, Drone, Drone de Assalto, Executor e Clérigo (boss)
-- Todos os estágios estão desbloqueados para testar; o menu mostra as estrelas de cada um e o ecrã de vitória tem o botão **SEGUINTE**
+- **30 estágios em 3 capítulos**:
+  - Capítulo 1 *Concórdia*: os 10 estágios iniciais.
+  - Capítulos 2 *Fronteiras* e 3 *Terras Perdidas*: 20 estágios desenhados a partir dos mapas de referência, rodados para ecrã horizontal.
+  - De 2 até 6 portais (terrestres e aéreos), várias rotas por portal e até 2 saídas.
+- **Mapas grandes com scroll** (até 24×13 casas): arrasta o mapa com o dedo ou usa a roda do rato. Ao arrastar uma carta para a borda, o mapa desliza. Pontos vermelhos na borda indicam inimigos fora do ecrã.
+- **Fraquezas**: cada operador tem um tipo de dano (Lâmina, Impacto, Perfuração, Antiaéreo, Explosivo, Cura) e cada inimigo tem um operador ideal. Ver [docs/DESIGN.md](docs/DESIGN.md#fraquezas).
+- 8 operadores e 12 inimigos. Toca num inimigo em batalha, ou no menu do estágio, para ver a fraqueza dele e o operador ideal.
+- Biomas placeholder por estágio (cidade, floresta, deserto, gelo, lava, pântano, céu, mar, ruínas, estação, desfiladeiro, caverna).
 - Mecânicas: chão/plataforma, bloqueio, DP, direção de ataque, skills com SP, retirar (devolve 50% do DP),
   redeploy com cooldown e custo crescente, limite de unidades, vidas e 3 estrelas
 - Velocidade x1/x2/x3, pausa e **auto-cast de skills** (botão AUTO SK)
@@ -40,7 +44,7 @@ Estrutura:
 
 | Pasta | Conteúdo |
 | --- | --- |
-| `src/data/` | Dados do jogo: operadores, inimigos e níveis (editar aqui para equilibrar) |
+| `src/data/` | Dados do jogo: operadores, inimigos e níveis (`levels/chapter1..3.ts`); editar aqui para equilibrar |
 | `tests/` | Testes: regras, replays e a garantia de que a IA vence cada estágio |
 | `src/sim/` | Simulação determinística sem Phaser: batalha, grelha/caminhos, IA, replays |
 | `src/game/` | Phaser: cenas, UI, arte placeholder e save |

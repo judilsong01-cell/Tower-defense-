@@ -4,7 +4,7 @@
 
 import { ENEMIES } from '../data/enemies';
 import { OPERATORS } from '../data/operators';
-import type { Dir, EnemyDef, LevelDef, OperatorDef, Point } from '../data/types';
+import type { DamageTag, Dir, EnemyDef, LevelDef, OperatorDef, Point } from '../data/types';
 import { buildRoutePath, Grid, rangeTiles, tileKey } from './grid';
 
 export const TICK_RATE = 30;
@@ -18,6 +18,10 @@ const RETREAT_REFUND = 0.5;
 /** Each redeploy raises the cost by 50% of the base cost, up to +100%. */
 const REDEPLOY_COST_STEP = 0.5;
 const REDEPLOY_COST_MAX_STEPS = 2;
+/** A hit on a weakness ignores DEF and is multiplied by this. */
+export const WEAK_MULTIPLIER = 1.5;
+/** A hit on a resistance is multiplied by this. */
+export const RESIST_MULTIPLIER = 0.5;
 
 export type Action =
   | { type: 'deploy'; op: string; x: number; y: number; dir: Dir }
@@ -52,6 +56,8 @@ export interface OperatorUnit {
   attackCooldown: number;
   /** Enemy uids currently blocked by this operator. */
   blocking: number[];
+  /** Active fire: damage per second and seconds left. Healing puts it out. */
+  burn: { dps: number; time: number } | null;
 }
 
 export interface EnemyUnit {
@@ -66,6 +72,9 @@ export interface EnemyUnit {
   readonly maxHp: number;
   blockedBy: number | null;
   attackCooldown: number;
+  /** Accumulates evasion so dodges follow a fixed pattern (no randomness). */
+  dodgeAcc: number;
+  healCooldown: number;
 }
 
 export type BattleEvent =
@@ -78,12 +87,17 @@ export type BattleEvent =
   | { type: 'attack'; uid: number; target: number }
   | { type: 'heal'; uid: number; target: number; amount: number }
   | { type: 'enemyAttack'; uid: number; target: number; ranged: boolean }
-  | { type: 'enemyHit'; uid: number; amount: number }
+  | { type: 'enemyHit'; uid: number; amount: number; effect: HitEffect }
+  | { type: 'dodge'; uid: number }
+  | { type: 'enemyHeal'; uid: number; target: number; amount: number }
+  | { type: 'burn'; uid: number }
   | { type: 'opHit'; uid: number; amount: number }
   | { type: 'enemyDied'; uid: number }
   | { type: 'leak'; uid: number };
 
 export type BattleResult = 'running' | 'won' | 'lost';
+
+export type HitEffect = 'weak' | 'resist' | 'normal';
 
 interface ScheduledSpawn {
   tick: number;
@@ -93,6 +107,21 @@ interface ScheduledSpawn {
 
 export function physicalDamage(atk: number, def: number): number {
   return Math.round(Math.max(atk - def, atk * MIN_DAMAGE_RATIO));
+}
+
+/** How an attack with these tags interacts with the enemy's weaknesses and resistances. */
+export function hitEffect(tags: readonly DamageTag[], enemy: EnemyDef): HitEffect {
+  if (enemy.weak?.some((t) => tags.includes(t))) return 'weak';
+  if (enemy.resist?.some((t) => tags.includes(t))) return 'resist';
+  return 'normal';
+}
+
+/** Damage dealt by an operator hit, after weaknesses and resistances. */
+export function operatorDamage(atk: number, tags: readonly DamageTag[], enemy: EnemyDef): { amount: number; effect: HitEffect } {
+  const effect = hitEffect(tags, enemy);
+  if (effect === 'weak') return { amount: Math.round(atk * WEAK_MULTIPLIER), effect };
+  const base = physicalDamage(atk, enemy.def);
+  return { amount: effect === 'resist' ? Math.round(base * RESIST_MULTIPLIER) : base, effect };
 }
 
 export class Battle {
@@ -230,6 +259,7 @@ export class Battle {
     this.updateSkills();
     this.operatorsAct();
     this.enemiesAct();
+    this.burnOperators();
     this.cleanup();
 
     if (this.lives <= 0) {
@@ -301,6 +331,7 @@ export class Battle {
       skillTime: 0,
       attackCooldown: 0,
       blocking: [],
+      burn: null,
     };
     this.operators.push(unit);
     this.events.push({ type: 'deploy', uid: unit.uid, op: def.id });
@@ -344,6 +375,8 @@ export class Battle {
         maxHp: s.enemy.hp,
         blockedBy: null,
         attackCooldown: 0,
+        dodgeAcc: 0,
+        healCooldown: 0,
       };
       this.enemies.push(enemy);
       this.events.push({ type: 'spawn', uid: enemy.uid });
@@ -441,6 +474,7 @@ export class Battle {
     for (const t of targets) {
       const healed = Math.min(t.maxHp - t.hp, Math.round(amount));
       t.hp += healed;
+      t.burn = null;
       this.events.push({ type: 'heal', uid: op.uid, target: t.uid, amount: healed });
     }
     return targets.length > 0;
@@ -451,6 +485,7 @@ export class Battle {
       if (e.hp <= 0) return false;
       if (e.blockedBy === op.uid) return true;
       if (e.def.flying && !op.def.canHitAir) return false;
+      if (e.def.camouflage && op.def.placement === 'high' && e.blockedBy === null) return false;
       return op.range.has(tileKey(Math.round(e.x), Math.round(e.y)));
     });
     if (candidates.length === 0) return false;
@@ -476,9 +511,17 @@ export class Battle {
     }
     for (const target of main) this.events.push({ type: 'attack', uid: op.uid, target: target.uid });
     for (const e of hit) {
-      const dmg = physicalDamage(atk, e.def.def);
+      if (op.def.placement === 'high' && e.def.evadeRanged) {
+        e.dodgeAcc += e.def.evadeRanged;
+        if (e.dodgeAcc >= 1) {
+          e.dodgeAcc -= 1;
+          this.events.push({ type: 'dodge', uid: e.uid });
+          continue;
+        }
+      }
+      const { amount: dmg, effect } = operatorDamage(atk, op.def.tags, e.def);
       e.hp -= dmg;
-      this.events.push({ type: 'enemyHit', uid: e.uid, amount: dmg });
+      this.events.push({ type: 'enemyHit', uid: e.uid, amount: dmg, effect });
       if (e.hp <= 0) {
         this.killed++;
         if (op.def.dpOnKill) this.dp = Math.min(DP_CAP, this.dp + op.def.dpOnKill);
@@ -490,6 +533,7 @@ export class Battle {
 
   private enemiesAct(): void {
     for (const e of this.enemies) {
+      if (e.hp > 0 && e.def.heals) this.enemyHeal(e, e.def.heals);
       if (e.hp <= 0 || e.def.atk <= 0) continue;
       if (e.attackCooldown > 0) e.attackCooldown -= DT;
       if (e.attackCooldown > 0) continue;
@@ -513,6 +557,37 @@ export class Battle {
       e.attackCooldown += e.def.interval;
       this.events.push({ type: 'enemyAttack', uid: e.uid, target: target.uid, ranged });
       this.events.push({ type: 'opHit', uid: target.uid, amount: dmg });
+      if (e.def.burn) {
+        target.burn = { dps: e.def.burn.dps, time: e.def.burn.duration };
+        this.events.push({ type: 'burn', uid: target.uid });
+      }
+    }
+  }
+
+  private enemyHeal(e: EnemyUnit, heal: NonNullable<EnemyDef['heals']>): void {
+    if (e.healCooldown > 0) e.healCooldown -= DT;
+    if (e.healCooldown > 0) return;
+    let target: EnemyUnit | undefined;
+    for (const o of this.enemies) {
+      if (o.hp <= 0 || o.hp >= o.maxHp || Math.hypot(o.x - e.x, o.y - e.y) > heal.range) continue;
+      if (!target || o.hp / o.maxHp < target.hp / target.maxHp) target = o;
+    }
+    if (!target) {
+      e.healCooldown = 0;
+      return;
+    }
+    const amount = Math.min(target.maxHp - target.hp, heal.amount);
+    target.hp += amount;
+    e.healCooldown += heal.interval;
+    this.events.push({ type: 'enemyHeal', uid: e.uid, target: target.uid, amount });
+  }
+
+  private burnOperators(): void {
+    for (const op of this.operators) {
+      if (!op.burn) continue;
+      op.hp -= op.burn.dps * DT;
+      op.burn.time -= DT;
+      if (op.burn.time <= 0) op.burn = null;
     }
   }
 

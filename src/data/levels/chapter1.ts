@@ -1,16 +1,11 @@
-import type { LevelDef, WaveDef } from './types';
-
-const BASE_SQUAD = ['brasa', 'faisca', 'muralha', 'lirio', 'corvo', 'trovao'] as const;
-/** From 1-4 on, two more operators join to handle multiple fronts and air raids. */
-const FULL_SQUAD = [...BASE_SQUAD, 'bastiao', 'falcao'] as const;
-
-function w(time: number, enemy: string, route: string, count = 1, interval = 0): WaveDef {
-  return { time, enemy, route, count, interval };
-}
+import type { LevelDef } from '../types';
+import { BASE_SQUAD, FULL_SQUAD, w } from './common';
 
 // Legend: see LevelDef in ./types.ts
-export const LEVEL_1: LevelDef = {
+const LEVEL_1: LevelDef = {
   id: 'l1',
+  chapter: 1,
+  biome: 'city',
   map: [
     '##############',
     'S....HH#######',
@@ -51,25 +46,30 @@ export const LEVEL_1: LevelDef = {
 
 const LEVEL_2: LevelDef = {
   id: 'l2',
+  chapter: 1,
+  biome: 'city',
   map: [
     '##############',
     'S........HHH##',
     '#HHHHHHH.HHH##',
-    '##......,.HH##',
-    '##.HHHHHHHHH##',
+    '##......,....S',
+    '##.HHHHHHHHHH#',
     '##...........B',
     '##############',
   ],
-  routes: [{ id: 'main', spawn: [0, 1], base: [13, 5] }],
+  routes: [
+    { id: 'main', spawn: [0, 1], base: [13, 5] },
+    { id: 'side', spawn: [13, 3], base: [13, 5] },
+  ],
   waves: [
     w(3, 'peacekeeper', 'main', 4, 3),
     w(18, 'hound', 'main', 4, 1.5),
     w(30, 'peacekeeper', 'main', 4, 2.5),
-    w(45, 'rifleman', 'main', 3, 3),
+    w(45, 'rifleman', 'side', 3, 3),
     w(60, 'hound', 'main', 5, 1.2),
     w(72, 'peacekeeper', 'main', 5, 2),
     w(88, 'rifleman', 'main', 2, 3),
-    w(92, 'riot', 'main'),
+    w(92, 'riot', 'side'),
   ],
   lives: 10,
   startDp: 10,
@@ -80,9 +80,11 @@ const LEVEL_2: LevelDef = {
 
 const LEVEL_3: LevelDef = {
   id: 'l3',
+  chapter: 1,
+  biome: 'city',
   map: [
-    '##############',
-    '#HHH#HHHH#HHH#',
+    '######S#######',
+    '#HHH#H.HH#HHH#',
     '#............#',
     'S............B',
     '#............#',
@@ -91,15 +93,16 @@ const LEVEL_3: LevelDef = {
   ],
   routes: [
     { id: 'main', spawn: [0, 3], base: [13, 3] },
+    { id: 'north', spawn: [6, 0], base: [13, 3] },
     { id: 'air', spawn: [0, 3], base: [13, 3], flying: true },
   ],
   waves: [
     w(3, 'peacekeeper', 'main', 4, 2.5),
-    w(15, 'riot', 'main', 2, 6),
+    w(15, 'riot', 'north', 2, 6),
     w(30, 'hound', 'main', 5, 1),
     w(40, 'drone', 'air', 2, 3),
     w(50, 'riot', 'main', 3, 5),
-    w(62, 'rifleman', 'main', 3, 2.5),
+    w(62, 'rifleman', 'north', 3, 2.5),
     w(78, 'peacekeeper', 'main', 6, 1.5),
     w(90, 'riot', 'main', 2, 4),
     w(100, 'executor', 'main'),
@@ -113,6 +116,8 @@ const LEVEL_3: LevelDef = {
 
 const LEVEL_4: LevelDef = {
   id: 'l4',
+  chapter: 1,
+  biome: 'city',
   map: [
     '######S#######',
     '##HHHHhHHHHH##',
@@ -152,6 +157,8 @@ const LEVEL_4: LevelDef = {
 
 const LEVEL_5: LevelDef = {
   id: 'l5',
+  chapter: 1,
+  biome: 'city',
   map: [
     '################',
     'S...........,..#',
@@ -190,8 +197,10 @@ const LEVEL_5: LevelDef = {
 
 const LEVEL_6: LevelDef = {
   id: 'l6',
+  chapter: 1,
+  biome: 'city',
   map: [
-    '################',
+    '########A#######',
     'S...HHH.....HH##',
     '#HH.HHH.HHH.HH##',
     '#HH.HHH.HHH.HH.B',
@@ -202,6 +211,7 @@ const LEVEL_6: LevelDef = {
   routes: [
     { id: 'main', spawn: [0, 1], base: [15, 3] },
     { id: 'air', spawn: [0, 1], base: [15, 3], flying: true },
+    { id: 'air2', spawn: [8, 0], base: [15, 3], flying: true },
   ],
   waves: [
     w(3, 'peacekeeper', 'main', 6, 3),
@@ -211,7 +221,7 @@ const LEVEL_6: LevelDef = {
     w(62, 'drone', 'air', 3, 2),
     w(75, 'peacekeeper', 'main', 6, 2),
     w(90, 'executor', 'main', 2, 8),
-    w(100, 'gunship', 'air', 2, 4),
+    w(100, 'gunship', 'air2', 2, 4),
     w(110, 'hound', 'main', 6, 0.8),
     w(120, 'cleric', 'main'),
   ],
@@ -224,6 +234,8 @@ const LEVEL_6: LevelDef = {
 
 const LEVEL_7: LevelDef = {
   id: 'l7',
+  chapter: 1,
+  biome: 'city',
   map: [
     '#######S########',
     'S......,HHHHHH##',
@@ -265,6 +277,8 @@ const LEVEL_7: LevelDef = {
 
 const LEVEL_8: LevelDef = {
   id: 'l8',
+  chapter: 1,
+  biome: 'city',
   map: [
     '################',
     'S..............B',
@@ -306,6 +320,8 @@ const LEVEL_8: LevelDef = {
 
 const LEVEL_9: LevelDef = {
   id: 'l9',
+  chapter: 1,
+  biome: 'city',
   map: [
     'S######hh######S',
     '#HH.HHH##HHH.HH#',
@@ -352,6 +368,8 @@ const LEVEL_9: LevelDef = {
 
 const LEVEL_10: LevelDef = {
   id: 'l10',
+  chapter: 1,
+  biome: 'city',
   map: [
     '################',
     'S.........,HH###',
@@ -396,10 +414,4 @@ const LEVEL_10: LevelDef = {
   squad: FULL_SQUAD,
 };
 
-export const LEVELS: readonly LevelDef[] = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7, LEVEL_8, LEVEL_9, LEVEL_10];
-
-export function getLevel(id: string): LevelDef {
-  const level = LEVELS.find((l) => l.id === id);
-  if (!level) throw new Error(`Unknown level: ${id}`);
-  return level;
-}
+export const CHAPTER_1: readonly LevelDef[] = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7, LEVEL_8, LEVEL_9, LEVEL_10];

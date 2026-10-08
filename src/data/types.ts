@@ -12,6 +12,13 @@ export type Placement = 'ground' | 'high';
 /** A tile offset relative to the operator, defined as if the operator faces right (+x forward, +y down). */
 export type Offset = readonly [number, number];
 
+/**
+ * Damage tags. Every operator deals one or more; enemies can be weak to some (the
+ * hit ignores DEF and deals x1.5) or resist others (half damage).
+ */
+export type DamageTag = 'blade' | 'impact' | 'pierce' | 'antiAir' | 'explosive' | 'heal';
+export const DAMAGE_TAGS: readonly DamageTag[] = ['blade', 'impact', 'pierce', 'antiAir', 'explosive', 'heal'];
+
 export interface SkillEffect {
   /** Instantly grants DP when the skill starts. */
   gainDp?: number;
@@ -59,6 +66,8 @@ export interface OperatorDef {
   heals: boolean;
   /** DP gained when this operator lands a killing blow. */
   dpOnKill: number;
+  /** Damage tags this operator deals (see DamageTag). */
+  tags: readonly DamageTag[];
   skill: SkillDef;
 }
 
@@ -78,6 +87,18 @@ export interface EnemyDef {
   /** Lives lost when this enemy reaches the base. */
   lifeDamage: number;
   boss?: boolean;
+  /** Hits with any of these tags ignore DEF and deal x1.5. */
+  weak?: readonly DamageTag[];
+  /** Hits with any of these tags deal half damage (weakness wins if both apply). */
+  resist?: readonly DamageTag[];
+  /** Fraction of attacks from high-ground operators that miss (deterministic pattern). */
+  evadeRanged?: number;
+  /** High-ground operators cannot target it unless it is being blocked. */
+  camouflage?: boolean;
+  /** Its attacks set the target on fire. A medic's heal puts the fire out. */
+  burn?: { dps: number; duration: number };
+  /** Heals the most injured nearby enemy. */
+  heals?: { amount: number; interval: number; range: number };
 }
 
 export type Point = readonly [number, number];
@@ -107,9 +128,16 @@ export interface WaveDef {
  *  `.` ground, deployable (melee)     `,` ground, not deployable
  *  `H` high ground, deployable (ranged)  `h` high ground, not deployable
  *  `#` wall / void                   `S` enemy spawn       `B` base (protect it)
+ *  `A` air-only spawn (drones)
  */
+/** Visual set used for the placeholder tiles (real art can override per biome). */
+export type Biome = 'city' | 'forest' | 'desert' | 'ice' | 'lava' | 'swamp' | 'sky' | 'sea' | 'ruins' | 'tech' | 'canyon' | 'cave';
+
 export interface LevelDef {
   id: string;
+  /** Chapter number, shown as `<chapter>-<index>`. */
+  chapter: number;
+  biome: Biome;
   /** i18n key prefix: `level.<id>.name` / `level.<id>.desc`. */
   map: readonly string[];
   routes: readonly RouteDef[];

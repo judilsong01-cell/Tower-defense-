@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { LEVELS, LEVEL_1 } from '../src/data/levels';
+import { LEVELS } from '../src/data/levels';
+
+const LEVEL_1 = LEVELS[0];
 import { OPERATORS } from '../src/data/operators';
 import { AutoDeployer } from '../src/sim/ai';
-import { Battle, physicalDamage, TICK_RATE } from '../src/sim/battle';
+import { ENEMIES } from '../src/data/enemies';
+import type { LevelDef } from '../src/data/types';
+import { Battle, operatorDamage, physicalDamage, TICK_RATE } from '../src/sim/battle';
 import { buildRoutePath, Grid, rotateOffset } from '../src/sim/grid';
 import { ReplayPlayer, ReplayRecorder } from '../src/sim/replay';
 
@@ -17,10 +21,27 @@ function run(battle: Battle, before?: (b: Battle) => void): Battle {
 }
 
 describe('grid', () => {
-  it('every map fits the battle screen (max 16x7)', () => {
+  it('there are 30 stages in 3 chapters with unique ids', () => {
+    expect(LEVELS.length).toBe(30);
+    expect(new Set(LEVELS.map((l) => l.id)).size).toBe(30);
+    expect([1, 2, 3].map((c) => LEVELS.filter((l) => l.chapter === c).length)).toEqual([10, 10, 10]);
+  });
+
+  it('every map stays within the scrollable size (max 24x13) and every stage has 2+ portals', () => {
     for (const level of LEVELS) {
-      expect(level.map.length).toBeLessThanOrEqual(7);
-      expect(level.map[0].length).toBeLessThanOrEqual(16);
+      expect(level.map.length).toBeLessThanOrEqual(13);
+      expect(level.map[0].length).toBeLessThanOrEqual(24);
+      const portals = level.map.join('').split('').filter((c) => c === 'S' || c === 'A').length;
+      expect(portals, level.id).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('every wave uses a route of the right kind', () => {
+    for (const level of LEVELS) {
+      for (const wave of level.waves) {
+        const route = level.routes.find((r) => r.id === wave.route)!;
+        expect(!!route.flying, `${level.id} ${wave.enemy} on ${wave.route}`).toBe(ENEMIES[wave.enemy].flying);
+      }
     }
   });
 
@@ -123,5 +144,102 @@ describe('auto deploy', () => {
     expect(copy.tick).toBe(original.tick);
     expect(copy.lives).toBe(original.lives);
     expect(copy.dp).toBeCloseTo(original.dp, 6);
+  });
+});
+
+/** A straight corridor: spawn on the left, base on the right, one high tile above column 3. */
+function corridor(enemy: string, count = 1): LevelDef {
+  return {
+    id: 'test',
+    chapter: 0,
+    biome: 'city',
+    map: ['###H#####', 'S.......B', '#########'],
+    routes: [{ id: 'r', spawn: [0, 1], base: [8, 1] }],
+    waves: [{ time: 1, enemy, route: 'r', count, interval: 1 }],
+    lives: 10,
+    startDp: 99,
+    dpPerSecond: 1,
+    deployLimit: 8,
+    squad: ['brasa', 'faisca', 'muralha', 'bastiao', 'lirio', 'corvo', 'falcao', 'trovao'],
+  };
+}
+
+describe('weaknesses', () => {
+  it('a weakness ignores DEF and deals x1.5, a resistance halves damage', () => {
+    expect(operatorDamage(340, ['impact'], ENEMIES.riot)).toEqual({ amount: 510, effect: 'weak' });
+    expect(operatorDamage(420, ['pierce'], ENEMIES.riot).effect).toBe('resist');
+    expect(operatorDamage(420, ['pierce'], ENEMIES.riot).amount).toBe(Math.round(physicalDamage(420, 300) * 0.5));
+    // Falcão is both pierce and anti-air: the weakness wins over the gunship's pierce resistance.
+    expect(operatorDamage(400, ['pierce', 'antiAir'], ENEMIES.gunship).effect).toBe('weak');
+  });
+
+  it('the ideal operator out-damages the wrong one', () => {
+    for (const [enemy, ideal, other] of [
+      ['riot', ['impact'], ['blade']],
+      ['executor', ['explosive'], ['blade']],
+      ['armored', ['explosive'], ['pierce']],
+      ['rifleman', ['pierce'], ['impact']],
+    ] as const) {
+      expect(operatorDamage(400, ideal, ENEMIES[enemy]).amount).toBeGreaterThan(operatorDamage(400, other, ENEMIES[enemy]).amount);
+    }
+  });
+
+  it('evasive enemies dodge half of the shots from high ground', () => {
+    const b = new Battle(corridor('hound'));
+    b.queue({ type: 'deploy', op: 'corvo', x: 3, y: 0, dir: 'down' });
+    let hits = 0;
+    let dodges = 0;
+    for (let i = 0; i < TICK_RATE * 6 && b.result === 'running'; i++) {
+      b.step();
+      for (const e of b.events) {
+        if (e.type === 'dodge') dodges++;
+        if (e.type === 'enemyHit') hits++;
+      }
+    }
+    expect(dodges).toBeGreaterThan(0);
+    expect(Math.abs(dodges - hits)).toBeLessThanOrEqual(1);
+  });
+
+  it('camouflaged enemies cannot be shot until someone blocks them', () => {
+    const open = new Battle(corridor('infiltrator'));
+    open.queue({ type: 'deploy', op: 'corvo', x: 3, y: 0, dir: 'down' });
+    run(open);
+    expect(open.killed).toBe(0);
+
+    const blocked = new Battle(corridor('infiltrator'));
+    blocked.queue({ type: 'deploy', op: 'corvo', x: 3, y: 0, dir: 'down' });
+    blocked.queue({ type: 'deploy', op: 'muralha', x: 3, y: 1, dir: 'left' });
+    run(blocked);
+    expect(blocked.killed).toBe(1);
+  });
+
+  it('fire keeps hurting until a medic heals it away', () => {
+    const b = new Battle(corridor('incinerator'));
+    b.queue({ type: 'deploy', op: 'muralha', x: 4, y: 1, dir: 'left' });
+    let burned = false;
+    for (let i = 0; i < TICK_RATE * 20 && !burned; i++) {
+      b.step();
+      burned = !!b.operatorById('muralha')?.burn;
+    }
+    expect(burned).toBe(true);
+    b.queue({ type: 'deploy', op: 'lirio', x: 3, y: 0, dir: 'down' });
+    let cleansed = false;
+    for (let i = 0; i < TICK_RATE * 10 && !cleansed; i++) {
+      b.step();
+      cleansed = b.events.some((e) => e.type === 'heal') && !b.operatorById('muralha')?.burn;
+    }
+    expect(cleansed).toBe(true);
+  });
+
+  it('enemy medics heal their allies', () => {
+    const level = corridor('peacekeeper');
+    const b = new Battle({ ...level, waves: [...level.waves, { time: 1.5, enemy: 'medic', route: 'r', count: 1, interval: 0 }] });
+    b.queue({ type: 'deploy', op: 'muralha', x: 5, y: 1, dir: 'left' });
+    let healed = false;
+    for (let i = 0; i < TICK_RATE * 30 && !healed && b.result === 'running'; i++) {
+      b.step();
+      healed = b.events.some((e) => e.type === 'enemyHeal');
+    }
+    expect(healed).toBe(true);
   });
 });

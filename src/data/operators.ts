@@ -22,6 +22,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   brasa: {
     ...base,
     id: 'brasa',
+    tags: ['blade'],
     name: 'Brasa',
     cls: 'vanguard',
     placement: 'ground',
@@ -38,6 +39,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   faisca: {
     ...base,
     id: 'faisca',
+    tags: ['blade'],
     name: 'Faísca',
     cls: 'vanguard',
     placement: 'ground',
@@ -55,6 +57,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   muralha: {
     ...base,
     id: 'muralha',
+    tags: ['impact'],
     name: 'Muralha',
     cls: 'defender',
     placement: 'ground',
@@ -71,6 +74,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   bastiao: {
     ...base,
     id: 'bastiao',
+    tags: ['impact'],
     name: 'Bastião',
     cls: 'defender',
     placement: 'ground',
@@ -87,6 +91,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   lirio: {
     ...base,
     id: 'lirio',
+    tags: ['heal'],
     name: 'Lírio',
     cls: 'medic',
     placement: 'high',
@@ -104,6 +109,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   corvo: {
     ...base,
     id: 'corvo',
+    tags: ['pierce'],
     name: 'Corvo',
     cls: 'sniper',
     placement: 'high',
@@ -122,6 +128,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   falcao: {
     ...base,
     id: 'falcao',
+    tags: ['pierce', 'antiAir'],
     name: 'Falcão',
     cls: 'sniper',
     placement: 'high',
@@ -140,6 +147,7 @@ export const OPERATORS: Record<string, OperatorDef> = {
   trovao: {
     ...base,
     id: 'trovao',
+    tags: ['explosive'],
     name: 'Trovão',
     cls: 'sniper',
     placement: 'high',

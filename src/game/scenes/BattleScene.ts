@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, CSS, GAME_H, GAME_W, TILE } from '../../config';
+import { idealOperators } from '../../data/counters';
 import { getLevel, LEVELS } from '../../data/levels';
 import type { Dir, LevelDef } from '../../data/types';
 import { t, type StringKey } from '../../i18n';
@@ -9,6 +10,7 @@ import { rangeTiles, type TileKind } from '../../sim/grid';
 import { dataVersion, ReplayPlayer, ReplayRecorder } from '../../sim/replay';
 import { loadSave, session, writeSave } from '../save';
 import { Button, panel, text } from '../ui/widgets';
+import { tileTextureKey } from '../art';
 
 export type BattleMode = 'manual' | 'replay' | 'ai';
 
@@ -22,7 +24,8 @@ type UiState =
   | { kind: 'drag'; op: string; startX: number; startY: number; moved: boolean }
   | { kind: 'card'; op: string }
   | { kind: 'direction'; op: string; x: number; y: number; dir: Dir; gesture: boolean; downX: number; downY: number }
-  | { kind: 'selected'; op: string };
+  | { kind: 'selected'; op: string }
+  | { kind: 'enemy'; uid: number };
 
 interface Driver {
   update(battle: Battle): void;
@@ -40,7 +43,10 @@ interface CardView {
 }
 
 const SPEEDS = [1, 2, 3];
-const MAP_Y = 32;
+/** Screen area where the map is shown (the deck and panels overlap its bottom edge). */
+const VIEW_TOP = 30;
+const VIEW_LEFT = 8;
+const VIEW_RIGHT = GAME_W - 8;
 const DECK_Y = 290;
 const CARD_W = 50;
 const CARD_H = 64;
@@ -59,6 +65,7 @@ const TILE_TEXTURE: Record<TileKind, string> = {
   highLocked: 'tile_high_locked',
   wall: 'tile_wall',
   spawn: 'tile_spawn',
+  airSpawn: 'tile_spawn_air',
   base: 'tile_base',
 };
 
@@ -75,7 +82,9 @@ export class BattleScene extends Phaser.Scene {
   private menuPaused = false;
   private acc = 0;
   private state: UiState = { kind: 'idle' };
-  private mapX = 0;
+  /** Map panning in progress (finger or mouse drag on the map). */
+  private pan: { x: number; y: number; scrollX: number; scrollY: number; moved: boolean } | null = null;
+  private edgeGfx!: Phaser.GameObjects.Graphics;
   private resultShown = false;
 
   private opViews = new Map<number, Phaser.GameObjects.Sprite>();
@@ -144,8 +153,11 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.mode === 'manual' && save.autoSkill) this.battle.queue({ type: 'autoSkill', on: true });
 
-    this.mapX = Math.floor((GAME_W - this.battle.grid.width * TILE) / 2);
     this.drawMap();
+    this.pan = null;
+    const cam = this.cameras.main;
+    const [sx, sy] = this.clampScroll((this.battle.grid.width * TILE - GAME_W) / 2, (this.battle.grid.height * TILE - (PANEL_Y + VIEW_TOP)) / 2);
+    cam.setScroll(sx, sy);
 
     this.overlayGfx = this.add.graphics().setDepth(5);
     this.barsGfx = this.add.graphics().setDepth(1000);
@@ -155,18 +167,25 @@ export class BattleScene extends Phaser.Scene {
       this.arrows.push({ dir, img });
     }
     this.cancelMark = text(this, 0, 0, 'X', { color: CSS.red }).setDepth(1600).setVisible(false).setOrigin(0.5);
-    this.hint = text(this, GAME_W / 2, MAP_Y + 4, t('hud.placeHint'), { align: 'center', color: CSS.gold }).setDepth(1600).setVisible(false);
+    this.hint = ui(text(this, GAME_W / 2, VIEW_TOP + 4, t('hud.placeHint'), { align: 'center', color: CSS.gold }).setDepth(1600).setVisible(false));
+    this.edgeGfx = ui(this.add.graphics().setDepth(1800));
 
-    this.createHud();
-    this.createPanel();
-    this.createDeck();
+    this.pinned(() => {
+      this.createHud();
+      this.createPanel();
+      this.createDeck();
+    });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (over.length === 0) this.onDown(p);
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
+    this.input.on('wheel', (_p: Phaser.Input.Pointer, _o: unknown, dx: number, dy: number) => {
+      const [x, y] = this.clampScroll(this.cameras.main.scrollX + dx * 0.5, this.cameras.main.scrollY + dy * 0.5);
+      this.cameras.main.setScroll(x, y);
+    });
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (over.length === 0 || this.state.kind === 'direction' || this.state.kind === 'drag') this.onUp(p);
+      if (over.length === 0 || this.pan || this.state.kind === 'direction' || this.state.kind === 'drag') this.onUp(p);
     });
   }
 
@@ -193,8 +212,10 @@ export class BattleScene extends Phaser.Scene {
       this.resultShown = true;
       this.time.delayedCall(700, () => this.showResult());
     }
+    this.autoScroll();
     this.syncUnits();
     this.drawOverlay();
+    this.drawEdgeMarkers();
     this.drawBars();
     this.updateHud();
     this.updateDeck();
@@ -204,21 +225,60 @@ export class BattleScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
   // Coordinates
 
+  // The map lives in world space with its top-left tile at (0, 0); the camera scrolls over it.
+  // HUD objects use scrollFactor 0 (see ui()), so they stay fixed on screen.
+
   private tileCenter(x: number, y: number): [number, number] {
-    return [this.mapX + x * TILE + TILE / 2, MAP_Y + y * TILE + TILE / 2];
+    return [x * TILE + TILE / 2, y * TILE + TILE / 2];
   }
 
-  private tileAt(px: number, py: number): [number, number] | null {
-    const x = Math.floor((px - this.mapX) / TILE);
-    const y = Math.floor((py - MAP_Y) / TILE);
+  /** Tile under a screen position, if any. */
+  private tileAt(screenX: number, screenY: number): [number, number] | null {
+    const p = this.toWorld(screenX, screenY);
+    const x = Math.floor(p.x / TILE);
+    const y = Math.floor(p.y / TILE);
     return this.battle.grid.inBounds(x, y) ? [x, y] : null;
+  }
+
+  private toWorld(screenX: number, screenY: number): Phaser.Math.Vector2 {
+    return this.cameras.main.getWorldPoint(screenX, screenY);
+  }
+
+  /** Keeps the map inside the view: centred when it fits, scrollable when it does not. */
+  private clampScroll(sx: number, sy: number): [number, number] {
+    const mapW = this.battle.grid.width * TILE;
+    const mapH = this.battle.grid.height * TILE;
+    const viewW = VIEW_RIGHT - VIEW_LEFT;
+    const viewH = PANEL_Y - 4 - VIEW_TOP;
+    const x = mapW <= viewW ? -Math.floor((GAME_W - mapW) / 2) : Phaser.Math.Clamp(sx, -VIEW_LEFT, mapW - VIEW_RIGHT);
+    const y = mapH <= viewH ? -VIEW_TOP : Phaser.Math.Clamp(sy, -VIEW_TOP, mapH - (PANEL_Y - 4));
+    return [Math.round(x), Math.round(y)];
+  }
+
+  /** While dragging a card near the screen edge, scroll the map so far tiles can be reached. */
+  private autoScroll(): void {
+    if (this.state.kind !== 'drag' || !this.state.moved) return;
+    const p = this.input.activePointer;
+    const margin = 28;
+    let dx = 0;
+    let dy = 0;
+    if (p.x < margin) dx = -6;
+    else if (p.x > GAME_W - margin) dx = 6;
+    if (p.y < VIEW_TOP + margin && p.y > VIEW_TOP - 10) dy = -6;
+    else if (p.y > PANEL_Y - margin && p.y < DECK_Y) dy = 6;
+    if (!dx && !dy) return;
+    const cam = this.cameras.main;
+    const [x, y] = this.clampScroll(cam.scrollX + dx, cam.scrollY + dy);
+    cam.setScroll(x, y);
+    this.onMove(p);
   }
 
   private drawMap(): void {
     const grid = this.battle.grid;
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
-        this.add.image(this.mapX + x * TILE, MAP_Y + y * TILE, TILE_TEXTURE[grid.kind(x, y)]).setOrigin(0, 0).setDepth(0);
+        const key = tileTextureKey(this, TILE_TEXTURE[grid.kind(x, y)], this.level.biome);
+        this.add.image(x * TILE, y * TILE, key).setOrigin(0, 0).setDepth(0);
       }
     }
   }
@@ -249,17 +309,43 @@ export class BattleScene extends Phaser.Scene {
       else this.state = { kind: 'drag', op: card, startX: p.x, startY: p.y, moved: false };
       return;
     }
+    // On the map: a drag pans, a tap selects (decided on release).
+    const cam = this.cameras.main;
+    this.pan = { x: p.x, y: p.y, scrollX: cam.scrollX, scrollY: cam.scrollY, moved: false };
+  }
+
+  /** A tap on the map (not a pan): deploy target, operator or enemy selection. */
+  private onMapTap(p: Phaser.Input.Pointer): void {
+    const s = this.state;
     const tile = this.tileAt(p.x, p.y);
     if (tile && s.kind === 'card' && !this.locked && this.battle.canDeployAt(s.op, tile[0], tile[1])) {
       this.enterDirection(s.op, tile[0], tile[1]);
       return;
     }
     const op = tile ? this.battle.operatorAt(tile[0], tile[1]) : undefined;
-    this.state = op ? { kind: 'selected', op: op.def.id } : { kind: 'idle' };
+    if (op) {
+      this.state = { kind: 'selected', op: op.def.id };
+      return;
+    }
+    const w = this.toWorld(p.x, p.y);
+    let best: { uid: number; d: number } | null = null;
+    for (const [uid, v] of this.enemyViews) {
+      const d = Math.hypot(v.sprite.x - w.x, v.sprite.y - 12 - w.y);
+      if (d <= 16 && (!best || d < best.d)) best = { uid, d };
+    }
+    this.state = best ? { kind: 'enemy', uid: best.uid } : { kind: 'idle' };
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
     const s = this.state;
+    if (this.pan && p.isDown) {
+      if (!this.pan.moved && Math.hypot(p.x - this.pan.x, p.y - this.pan.y) > 6) this.pan.moved = true;
+      if (this.pan.moved) {
+        const [x, y] = this.clampScroll(this.pan.scrollX - (p.x - this.pan.x), this.pan.scrollY - (p.y - this.pan.y));
+        this.cameras.main.setScroll(x, y);
+      }
+      return;
+    }
     if (s.kind === 'drag') {
       if (!s.moved && Math.hypot(p.x - s.startX, p.y - s.startY) > 6) s.moved = true;
       if (s.moved && !this.locked && this.battle.canDeployOperator(s.op)) {
@@ -269,17 +355,25 @@ export class BattleScene extends Phaser.Scene {
           const [cx, cy] = this.tileCenter(tile[0], tile[1]);
           this.ghost.setPosition(cx, cy + FEET);
         } else {
-          this.ghost.setPosition(p.x, p.y + 8);
+          const w = this.toWorld(p.x, p.y);
+          this.ghost.setPosition(w.x, w.y + 8);
         }
       }
     } else if (s.kind === 'direction' && s.gesture && p.isDown) {
       const [cx, cy] = this.tileCenter(s.x, s.y);
-      if (Math.hypot(p.x - cx, p.y - cy) > 10) s.dir = vectorToDir(p.x - cx, p.y - cy);
+      const w = this.toWorld(p.x, p.y);
+      if (Math.hypot(w.x - cx, w.y - cy) > 10) s.dir = vectorToDir(w.x - cx, w.y - cy);
     }
   }
 
   private onUp(p: Phaser.Input.Pointer): void {
     const s = this.state;
+    if (this.pan) {
+      const tapped = !this.pan.moved;
+      this.pan = null;
+      if (tapped) this.onMapTap(p);
+      return;
+    }
     if (s.kind === 'drag') {
       this.ghost.setVisible(false);
       if (!s.moved) {
@@ -295,13 +389,14 @@ export class BattleScene extends Phaser.Scene {
       if (!s.gesture) return;
       s.gesture = false;
       const [cx, cy] = this.tileCenter(s.x, s.y);
-      const fromCenter = Math.hypot(p.x - cx, p.y - cy);
+      const w = this.toWorld(p.x, p.y);
+      const fromCenter = Math.hypot(w.x - cx, w.y - cy);
       const swiped = Math.hypot(p.x - s.downX, p.y - s.downY) > 8;
       if (swiped && fromCenter > 14) {
-        this.confirmDeploy(vectorToDir(p.x - cx, p.y - cy));
+        this.confirmDeploy(vectorToDir(w.x - cx, w.y - cy));
         return;
       }
-      const arrow = this.arrows.find((a) => Math.hypot(p.x - a.img.x, p.y - a.img.y) <= 14);
+      const arrow = this.arrows.find((a) => Math.hypot(w.x - a.img.x, w.y - a.img.y) <= 14);
       if (arrow) this.confirmDeploy(arrow.dir);
       else if (fromCenter <= 16) this.confirmDeploy(s.dir);
       else this.cancelPlacement();
@@ -375,6 +470,30 @@ export class BattleScene extends Phaser.Scene {
     this.dpText = text(this, GAME_W - 72, PANEL_Y + 6, '').setDepth(2000);
     this.dpBarGfx = this.add.graphics().setDepth(2000);
     this.deployText = text(this, GAME_W - 170, PANEL_Y + 9, '').setDepth(2000);
+  }
+
+  /** Runs `build` and pins every object it adds to the screen, so the camera scroll does not move it. */
+  private pinned(build: () => void): void {
+    const before = new Set(this.children.list);
+    build();
+    for (const o of this.children.list) if (!before.has(o)) ui(o);
+  }
+
+  /** Red marks on the screen edge pointing at enemies outside the view. */
+  private drawEdgeMarkers(): void {
+    const g = this.edgeGfx.clear();
+    const cam = this.cameras.main;
+    const top = VIEW_TOP + 4;
+    const bottom = PANEL_Y - 8;
+    for (const v of this.enemyViews.values()) {
+      const sx = v.sprite.x - cam.scrollX;
+      const sy = v.sprite.y - 12 - cam.scrollY;
+      if (sx >= 0 && sx <= GAME_W && sy >= top && sy <= bottom) continue;
+      const x = Phaser.Math.Clamp(sx, 6, GAME_W - 6);
+      const y = Phaser.Math.Clamp(sy, top, bottom);
+      g.fillStyle(0x000000, 0.8).fillRect(x - 3, y - 3, 6, 6);
+      g.fillStyle(COLORS.redLight, 1).fillRect(x - 2, y - 2, 4, 4);
+    }
   }
 
   private takeOver(): void {
@@ -470,6 +589,10 @@ export class BattleScene extends Phaser.Scene {
 
   private updatePanel(): void {
     const s = this.state;
+    if (s.kind === 'enemy') {
+      this.updateEnemyPanel(s.uid);
+      return;
+    }
     const opId = s.kind === 'idle' ? null : s.op;
     const entry = opId ? this.battle.rosterEntry(opId) : undefined;
     const unit = s.kind === 'selected' ? this.panelOp() : undefined;
@@ -491,7 +614,7 @@ export class BattleScene extends Phaser.Scene {
     const y = PANEL_Y + 7;
     const statsAtk = unit ? Math.round(this.battle.stats(unit).atk) : def.atk;
     const statsDef = unit ? Math.round(this.battle.stats(unit).def) : def.def;
-    setText(tx[0].setPosition(x, y), `${def.name}  ${t(`class.${def.cls}` as StringKey)}`);
+    setText(tx[0].setPosition(x, y), `${def.name}  ${t(`class.${def.cls}` as StringKey)}  [${def.tags.map((tag) => t(`tag.${tag}` as StringKey)).join(', ')}]`);
     tx[0].setColor(CSS.text);
     const hp = unit ? `HP ${Math.max(0, Math.ceil(unit.hp))}/${unit.maxHp}` : `HP ${def.hp}`;
     setText(tx[1].setPosition(x, y + 14), `${hp}  ${def.heals ? '+' : 'ATK'} ${statsAtk}  DEF ${statsDef}`);
@@ -507,7 +630,8 @@ export class BattleScene extends Phaser.Scene {
     const info = unit
       ? ''
       : `${t('panel.cost', { n: this.battle.costOf(def.id) })}  ${def.placement === 'ground' ? t('panel.block', { n: def.block }) + '  ' : ''}${t('panel.cooldown', { s: def.redeploy })}`;
-    setText(tx[4].setPosition(x, PANEL_Y + PANEL_H - 14), info);
+    tx[4].setPosition(x, PANEL_Y + PANEL_H - 14).setWordWrapWidth(w - 16, true);
+    setText(tx[4], info);
     tx[4].setColor(CSS.text);
 
     if (unit) {
@@ -522,6 +646,40 @@ export class BattleScene extends Phaser.Scene {
       this.skillBtn.setPosition(bx, PANEL_Y + 34).setEnabled(this.battle.canUseSkill(unit.def.id));
       this.retreatBtn.setPosition(bx, PANEL_Y + 62).setLabel(t('panel.retreat', { dp: this.battle.refundOf(unit.def.id) }));
     }
+  }
+
+  private updateEnemyPanel(uid: number): void {
+    const e = this.battle.enemies.find((en) => en.uid === uid);
+    const tx = this.panelTexts;
+    this.panelGfx.clear();
+    this.skillBtn.setVisible(false);
+    this.retreatBtn.setVisible(false);
+    if (!e) {
+      this.state = { kind: 'idle' };
+      for (const txt of tx) txt.setVisible(false);
+      return;
+    }
+    for (const txt of tx) txt.setVisible(true);
+    const def = e.def;
+    const deckLeft = Math.min(DECK_RIGHT, ...this.cards.filter((c) => c.container.visible).map((c) => c.x));
+    const w = Math.max(200, deckLeft - PANEL_X - 8);
+    panel(this.panelGfx, PANEL_X, PANEL_Y, w, PANEL_H, COLORS.panel, COLORS.regime);
+    const x = PANEL_X + 8;
+    const y = PANEL_Y + 7;
+    const tagNames = (tags: readonly string[] | undefined) => (tags ?? []).map((tag) => t(`tag.${tag}` as StringKey)).join(', ');
+    setText(tx[0].setPosition(x, y), `${t(`enemy.${def.id}` as StringKey)}${def.boss ? '  BOSS' : ''}`);
+    tx[0].setColor(CSS.regime);
+    setText(tx[1].setPosition(x, y + 14), `HP ${Math.max(0, Math.ceil(e.hp))}/${e.maxHp}  ATK ${def.atk}  DEF ${def.def}`);
+    tx[1].setColor(CSS.dim);
+    const ideal = idealOperators(def, this.level.squad).map((o) => o.name).join(', ');
+    const weak = def.weak?.length ? `${t('info.weak')}: ${tagNames(def.weak)}` : '';
+    setText(tx[2].setPosition(x, y + 30), [weak, ideal ? t('info.ideal', { ops: ideal }) : ''].filter(Boolean).join('  '));
+    tx[2].setColor(CSS.gold).setWordWrapWidth(w - 16, true);
+    setText(tx[3].setPosition(x, y + 52), def.resist?.length ? `${t('info.resist')}: ${tagNames(def.resist)}` : '');
+    tx[3].setColor(CSS.red).setWordWrapWidth(w - 16, true);
+    tx[4].setPosition(x, y + 66).setWordWrapWidth(w - 16, true);
+    setText(tx[4], t(`trait.${def.id}` as StringKey));
+    tx[4].setColor(CSS.text);
   }
 
   // ---------------------------------------------------------------------------
@@ -572,8 +730,8 @@ export class BattleScene extends Phaser.Scene {
     for (const e of this.battle.enemies) {
       alive.add(e.uid);
       const v = this.enemyView(e);
-      const px = Math.round(this.mapX + e.x * TILE + TILE / 2);
-      const ground = Math.round(MAP_Y + e.y * TILE + TILE / 2 + FEET);
+      const px = Math.round(e.x * TILE + TILE / 2);
+      const ground = Math.round(e.y * TILE + TILE / 2 + FEET);
       const lift = e.def.flying ? 12 : 0;
       v.sprite.setPosition(px, ground - lift).setDepth(10 + ground);
       if (Math.abs(e.x - v.lastX) > 0.001) v.sprite.setFlipX(e.x < v.lastX);
@@ -633,7 +791,23 @@ export class BattleScene extends Phaser.Scene {
         }
         case 'enemyHit': {
           const s = this.enemyViews.get(ev.uid)?.sprite;
-          if (s) flash(this, s, 0xffffff);
+          if (s) flash(this, s, ev.effect === 'weak' ? 0xffd84a : ev.effect === 'resist' ? 0x6a6d75 : 0xffffff);
+          if (s && ev.effect === 'weak') this.burst(s.x, s.y - 14, 0xffd84a, 4);
+          break;
+        }
+        case 'dodge': {
+          const s = this.enemyViews.get(ev.uid)?.sprite;
+          if (s) this.popup(s.x, s.y - 36, t('info.dodge'), CSS.dim);
+          break;
+        }
+        case 'enemyHeal': {
+          const s = this.enemyViews.get(ev.target)?.sprite;
+          if (s) this.healFx(s.x, s.y - 16, 0x7fe0ff);
+          break;
+        }
+        case 'burn': {
+          const s = this.opViews.get(ev.uid);
+          if (s) this.burst(s.x, s.y - 14, 0xff6a1a, 6);
           break;
         }
         case 'opHit': {
@@ -710,9 +884,15 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  private healFx(x: number, y: number): void {
+  private popup(x: number, y: number, label: string, color: string): void {
+    const txt = text(this, x, y, label, { align: 'center', color }).setDepth(3000);
+    this.tweens.add({ targets: txt, y: y - 10, alpha: 0, duration: 500, onComplete: () => txt.destroy() });
+  }
+
+  private healFx(x: number, y: number, tint?: number): void {
     for (let i = 0; i < 3; i++) {
       const img = this.add.image(x + (i - 1) * 6, y + i * 2, 'fx_heal').setDepth(1100);
+      if (tint) img.setTint(tint);
       this.tweens.add({ targets: img, y: img.y - 12, alpha: 0, duration: 500, delay: i * 80, onComplete: () => img.destroy() });
     }
   }
@@ -740,8 +920,8 @@ export class BattleScene extends Phaser.Scene {
       for (let y = 0; y < grid.height; y++) {
         for (let x = 0; x < grid.width; x++) {
           if (!this.battle.canDeployAt(s.op, x, y)) continue;
-          const px = this.mapX + x * TILE;
-          const py = MAP_Y + y * TILE;
+          const px = x * TILE;
+          const py = y * TILE;
           g.fillStyle(COLORS.red, 0.28).fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
           g.lineStyle(1, COLORS.redLight, 0.9).strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
         }
@@ -764,6 +944,14 @@ export class BattleScene extends Phaser.Scene {
       this.ghost.setVisible(false).setFlipX(false);
     }
 
+    if (s.kind === 'enemy') {
+      const v = this.enemyViews.get(s.uid);
+      if (v) {
+        const h = v.sprite.displayHeight;
+        g.lineStyle(1, COLORS.regime, 1).strokeRect(Math.round(v.sprite.x - 14) + 0.5, Math.round(v.sprite.y - h - 2) + 0.5, 28, h + 4);
+      }
+    }
+
     if (s.kind === 'selected') {
       const op = this.battle.operatorById(s.op);
       if (op) {
@@ -777,8 +965,8 @@ export class BattleScene extends Phaser.Scene {
   private drawRange(g: Phaser.GameObjects.Graphics, tiles: readonly (readonly [number, number])[], color: number): void {
     for (const [x, y] of tiles) {
       if (!this.battle.grid.inBounds(x, y)) continue;
-      const px = this.mapX + x * TILE;
-      const py = MAP_Y + y * TILE;
+      const px = x * TILE;
+      const py = y * TILE;
       g.fillStyle(color, 0.22).fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
       g.lineStyle(1, color, 0.8).strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
     }
@@ -794,6 +982,11 @@ export class BattleScene extends Phaser.Scene {
       const y = Math.round(s.y + 2);
       g.fillStyle(0x000000, 1).fillRect(x - 1, y - 1, 26, 6);
       g.fillStyle(COLORS.hp, 1).fillRect(x, y, Math.round(24 * Math.max(0, op.hp) / op.maxHp), 2);
+      if (op.burn) {
+        const f = Math.floor(this.time.now / 100) % 2;
+        g.fillStyle(0xff6a1a, 1).fillRect(s.x - 6, s.y - 34 - f, 3, 3).fillRect(s.x + 3, s.y - 33 + f, 3, 3);
+        g.fillStyle(0xffd04a, 1).fillRect(s.x - 1, s.y - 36 + f, 2, 3);
+      }
       const skill = op.def.skill;
       if (op.skillActive) {
         g.fillStyle(COLORS.redLight, 1).fillRect(x, y + 3, Math.round(24 * op.skillTime / skill.duration), 1);
@@ -820,6 +1013,10 @@ export class BattleScene extends Phaser.Scene {
 
   private openPause(): void {
     if (this.resultShown || this.menuPaused) return;
+    this.pinned(() => this.buildPause());
+  }
+
+  private buildPause(): void {
     this.menuPaused = true;
     const g = this.add.graphics().setDepth(5000);
     g.fillStyle(0x000000, 0.7).fillRect(0, 0, GAME_W, GAME_H);
@@ -842,6 +1039,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private showResult(): void {
+    this.pinned(() => this.buildResult());
+  }
+
+  private buildResult(): void {
     const b = this.battle;
     const won = b.result === 'won';
     const stars = b.stars();
@@ -904,4 +1105,11 @@ function playAnim(s: Phaser.GameObjects.Sprite, texture: string, anim: string): 
   if (!s.scene.anims.exists(key)) return;
   s.play(key, anim === 'idle' || anim === 'move');
   if (anim === 'attack') s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => playAnim(s, texture, 'idle'));
+}
+
+/** Pins a game object to the screen so the camera scroll does not move it. */
+function ui<T extends Phaser.GameObjects.GameObject>(o: T): T {
+  if (o instanceof Phaser.GameObjects.Container) o.setScrollFactor(0, 0, true);
+  else (o as unknown as Phaser.GameObjects.Components.ScrollFactor).setScrollFactor(0);
+  return o;
 }

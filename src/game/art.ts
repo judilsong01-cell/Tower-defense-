@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { ENEMIES } from '../data/enemies';
 import { OPERATORS } from '../data/operators';
+import type { Biome } from '../data/types';
 
 export interface ManifestSprite {
   file: string;
@@ -19,6 +20,8 @@ export interface Manifest {
 }
 
 export const MANIFEST_KEY = 'manifest';
+/** Registry key holding the set of texture keys provided by real art. */
+export const ART_KEYS = 'artKeys';
 
 // ---------------------------------------------------------------------------
 // Pixel maps (16x16, drawn at 2x to fill a 32x32 frame). Characters face right.
@@ -90,6 +93,25 @@ const DRONE = [
   '................',
 ];
 
+const TANK = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....kkkkkk.....',
+  '....kmmmmmmkkkkk',
+  '....kmmvvmmk....',
+  '..kkkkkkkkkkkk..',
+  '.kmmmmmmmmmmmmk.',
+  '.kmmmmmmmmmmmmk.',
+  '.kddddddddddddk.',
+  '.kkkkkkkkkkkkkk.',
+  '.kbkbkbkbkbkbkk.',
+  '..kkkkkkkkkkkk..',
+  '................',
+  '................',
+];
+
 type Palette = Record<string, string>;
 /** Extra pixels drawn over a base map: [x, y, paletteChar]. */
 type Overlay = [number, number, string][];
@@ -125,6 +147,9 @@ const WEAPONS: Record<string, Overlay> = {
   baton: [...line(12, 7, 12, 12, 'g')],
   riotShield: [...box(11, 4, 14, 14, 'S'), ...line(12, 7, 13, 7, 'v')],
   hammer: [...line(13, 3, 13, 12, 'g'), ...box(12, 2, 15, 5, 'w')],
+  flamer: [...line(8, 9, 13, 9, 'g'), [14, 8, 'f'], [14, 9, 'f'], [14, 10, 'f'], [15, 9, 'y'], [15, 8, 'f']],
+  knife: [[12, 9, 'w'], [13, 8, 'w'], [11, 10, 'g']],
+  regimeCross: [[8, 8, 'e'], [7, 9, 'e'], [8, 9, 'e'], [9, 9, 'e'], [8, 10, 'e'], ...box(12, 10, 14, 12, 'w')],
   pistols: [[13, 9, 'g'], [14, 9, 'g'], [15, 9, 'g'], [13, 10, 'g'], [3, 9, 'g'], [2, 9, 'g'], [1, 9, 'g'], [3, 10, 'g']],
 };
 
@@ -157,6 +182,10 @@ const ENEMY_ART: Record<string, CharacterArt> = {
   cleric: { map: HUMAN, coat: true, pal: { h: '#0c0c0e', c: '#151518', d: '#050506', a: '#efefef', p: '#151518', g: '#9aa0aa', s: '#e8cfc0' }, overlay: WEAPONS.pistols },
   executor: { map: HUMAN, helmet: true, pal: { ...REGIME, h: '#26282e', c: '#33363d', d: '#22242a', a: '#bfd7ff', p: '#2a2c32', w: '#8d939e', g: '#4a4d55' }, overlay: WEAPONS.hammer },
   gunship: { map: DRONE, pal: { m: '#4a4f5a', v: '#0e0f12', e: '#ff5a5f' }, overlay: [[2, 11, 'v'], [3, 12, 'v'], [13, 11, 'v'], [12, 12, 'v']] },
+  incinerator: { map: HUMAN, helmet: true, pal: { ...REGIME, h: '#4a3f36', c: '#6b5b4a', d: '#4f4236', a: '#1b1c20', p: '#3d342b', e: '#ff9a3a', g: '#2a2a2a', f: '#ff6a1a', y: '#ffd04a' }, overlay: WEAPONS.flamer },
+  infiltrator: { map: HUMAN, helmet: true, pal: { ...REGIME, h: '#22252b', c: '#2a2e36', d: '#1d2026', a: '#3d4a5c', p: '#1f2228', v: '#0b0c0e', e: '#7fe0ff', w: '#c9ced6', g: '#444' }, overlay: WEAPONS.knife },
+  medic: { map: HUMAN, helmet: true, pal: { ...REGIME, c: '#e6e8ec', d: '#b9bdc6', a: '#bfd7ff', w: '#f4f4f4' }, overlay: WEAPONS.regimeCross },
+  armored: { map: TANK, pal: { m: '#9aa0aa', v: '#bfd7ff', d: '#5a606a', b: '#2a2c31' } },
   hound: { map: HOUND, pal: { f: '#3a3d44', e: '#bfd7ff' } },
   drone: { map: DRONE, pal: { m: '#d9dbe0', v: '#16171a', e: '#bfd7ff' } },
 };
@@ -211,46 +240,123 @@ function stripes(ctx: CanvasRenderingContext2D, color: string): void {
   for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) if ((x + y) % 8 < 2) ctx.fillRect(x, y, 1, 1);
 }
 
-function groundTile(ctx: CanvasRenderingContext2D, locked: boolean): void {
-  px(ctx, 0, 0, 32, 32, '#7d8088');
-  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
-    const n = noise(x, y, 1);
-    if (n < 0.06) px(ctx, x, y, 1, 1, '#6f727a');
-    else if (n > 0.95) px(ctx, x, y, 1, 1, '#8d9098');
-  }
-  if (locked) stripes(ctx, '#666971');
-  px(ctx, 0, 0, 32, 1, '#9a9da5');
-  px(ctx, 0, 0, 1, 32, '#9a9da5');
-  px(ctx, 0, 31, 32, 1, '#55585f');
-  px(ctx, 31, 0, 1, 32, '#55585f');
+/** Lightens (amount > 0) or darkens (amount < 0) a #rrggbb colour. */
+function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (c: number) => Math.max(0, Math.min(255, Math.round(c + (amount > 0 ? (255 - c) * amount : c * amount))));
+  const r = f((n >> 16) & 255);
+  const g = f((n >> 8) & 255);
+  const b = f(n & 255);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
-function highTile(ctx: CanvasRenderingContext2D, locked: boolean): void {
-  px(ctx, 0, 0, 32, 32, '#3a3d44');
-  px(ctx, 1, 1, 30, 24, '#5f636c');
-  for (let y = 1; y < 25; y++) for (let x = 1; x < 31; x++) if (noise(x, y, 2) < 0.05) px(ctx, x, y, 1, 1, '#555960');
+type WallStyle = 'bricks' | 'water' | 'trees' | 'lava' | 'stars' | 'rock';
+
+interface BiomePalette {
+  ground: string;
+  high: string;
+  wall: string;
+  wallStyle: WallStyle;
+  /** Accent used by some wall styles (foam, embers, stars, leaves). */
+  accent: string;
+}
+
+/** Placeholder colours for each biome. Real art can replace any tile per biome (see ART_GUIDE.md). */
+export const BIOMES: Record<Biome, BiomePalette> = {
+  city: { ground: '#7d8088', high: '#5f636c', wall: '#15161a', wallStyle: 'bricks', accent: '#1d1e23' },
+  forest: { ground: '#a8865a', high: '#4f7a3a', wall: '#1d3a1f', wallStyle: 'trees', accent: '#2f5a2a' },
+  desert: { ground: '#d9b77a', high: '#a8743f', wall: '#b08850', wallStyle: 'rock', accent: '#c49a5a' },
+  ice: { ground: '#c9d3dc', high: '#7f97ad', wall: '#2f6f9a', wallStyle: 'water', accent: '#a8d8f0' },
+  lava: { ground: '#5a5048', high: '#3f3833', wall: '#b8360c', wallStyle: 'lava', accent: '#ffb02a' },
+  swamp: { ground: '#7a5a3a', high: '#4a6a2a', wall: '#2c3a28', wallStyle: 'water', accent: '#7fbf3a' },
+  sky: { ground: '#b9a27a', high: '#5f8a3f', wall: '#8fc4ef', wallStyle: 'stars', accent: '#e8f4ff' },
+  sea: { ground: '#d8c48f', high: '#5f8a3f', wall: '#1f6fb0', wallStyle: 'water', accent: '#8fd0ff' },
+  ruins: { ground: '#c2b28a', high: '#6f7a5a', wall: '#2a7a8a', wallStyle: 'water', accent: '#8fe0e0' },
+  tech: { ground: '#4a5160', high: '#2c3240', wall: '#0a0c1a', wallStyle: 'stars', accent: '#8fa8ff' },
+  canyon: { ground: '#c79a5f', high: '#8a4f2a', wall: '#4a2414', wallStyle: 'rock', accent: '#6a3a1e' },
+  cave: { ground: '#5d5a57', high: '#3a3633', wall: '#1a0f0a', wallStyle: 'lava', accent: '#d8501a' },
+};
+
+function groundTile(ctx: CanvasRenderingContext2D, pal: BiomePalette, locked: boolean): void {
+  px(ctx, 0, 0, 32, 32, pal.ground);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+    const n = noise(x, y, 1);
+    if (n < 0.06) px(ctx, x, y, 1, 1, shade(pal.ground, -0.1));
+    else if (n > 0.95) px(ctx, x, y, 1, 1, shade(pal.ground, 0.08));
+  }
+  if (locked) stripes(ctx, shade(pal.ground, -0.18));
+  px(ctx, 0, 0, 32, 1, shade(pal.ground, 0.18));
+  px(ctx, 0, 0, 1, 32, shade(pal.ground, 0.18));
+  px(ctx, 0, 31, 32, 1, shade(pal.ground, -0.3));
+  px(ctx, 31, 0, 1, 32, shade(pal.ground, -0.3));
+}
+
+function highTile(ctx: CanvasRenderingContext2D, pal: BiomePalette, locked: boolean): void {
+  px(ctx, 0, 0, 32, 32, shade(pal.high, -0.4));
+  px(ctx, 1, 1, 30, 24, pal.high);
+  for (let y = 1; y < 25; y++) for (let x = 1; x < 31; x++) if (noise(x, y, 2) < 0.05) px(ctx, x, y, 1, 1, shade(pal.high, -0.12));
   if (locked) {
     ctx.save();
     ctx.beginPath();
     ctx.rect(1, 1, 30, 24);
     ctx.clip();
-    stripes(ctx, '#4c5058');
+    stripes(ctx, shade(pal.high, -0.2));
     ctx.restore();
   }
-  px(ctx, 1, 1, 30, 1, '#8a8e97');
-  px(ctx, 1, 25, 30, 1, '#2a2c31');
-  px(ctx, 0, 26, 32, 6, '#2e3036');
-  for (const x of [4, 27]) px(ctx, x, 4, 1, 1, '#9da1aa');
-  for (const x of [4, 27]) px(ctx, x, 21, 1, 1, '#9da1aa');
+  px(ctx, 1, 1, 30, 1, shade(pal.high, 0.3));
+  px(ctx, 1, 25, 30, 1, shade(pal.high, -0.55));
+  px(ctx, 0, 26, 32, 6, shade(pal.high, -0.5));
+  for (const x of [4, 27]) px(ctx, x, 4, 1, 1, shade(pal.high, 0.4));
+  for (const x of [4, 27]) px(ctx, x, 21, 1, 1, shade(pal.high, 0.4));
 }
 
-function wallTile(ctx: CanvasRenderingContext2D): void {
-  px(ctx, 0, 0, 32, 32, '#15161a');
-  for (let row = 0; row < 4; row++) {
-    const off = row % 2 === 0 ? 0 : 8;
-    px(ctx, 0, row * 8, 32, 1, '#1d1e23');
-    for (let x = off; x < 32; x += 16) px(ctx, x, row * 8, 1, 8, '#1d1e23');
+function wallTile(ctx: CanvasRenderingContext2D, pal: BiomePalette): void {
+  px(ctx, 0, 0, 32, 32, pal.wall);
+  switch (pal.wallStyle) {
+    case 'bricks':
+      for (let row = 0; row < 4; row++) {
+        const off = row % 2 === 0 ? 0 : 8;
+        px(ctx, 0, row * 8, 32, 1, pal.accent);
+        for (let x = off; x < 32; x += 16) px(ctx, x, row * 8, 1, 8, pal.accent);
+      }
+      break;
+    case 'water':
+      for (let y = 2; y < 32; y += 8) for (let x = 0; x < 32; x++) if ((x + y * 3) % 12 < 4) px(ctx, x, y + ((x >> 2) % 2), 1, 1, pal.accent);
+      break;
+    case 'trees':
+      for (const [cx, cy] of [[8, 8], [24, 10], [14, 24], [28, 27], [3, 22]]) {
+        px(ctx, cx - 4, cy - 3, 8, 6, pal.accent);
+        px(ctx, cx - 3, cy - 4, 6, 8, pal.accent);
+        px(ctx, cx - 2, cy - 2, 2, 2, shade(pal.accent, 0.25));
+      }
+      break;
+    case 'lava':
+      for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+        const n = noise(x >> 1, y >> 1, 7);
+        if (n > 0.8) px(ctx, x, y, 1, 1, pal.accent);
+        else if (n < 0.15) px(ctx, x, y, 1, 1, shade(pal.wall, -0.4));
+      }
+      break;
+    case 'stars':
+      for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) if (noise(x, y, 9) > 0.985) px(ctx, x, y, 1, 1, pal.accent);
+      break;
+    case 'rock':
+      for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+        const n = noise(x >> 2, y >> 2, 5);
+        if (n > 0.7) px(ctx, x, y, 1, 1, pal.accent);
+        else if (n < 0.2) px(ctx, x, y, 1, 1, shade(pal.wall, -0.25));
+      }
+      break;
   }
+}
+
+/** Texture key for a map tile: real art for the biome, else generic real art, else the biome placeholder. */
+export function tileTextureKey(scene: Phaser.Scene, base: string, biome: Biome): string {
+  const art = (scene.registry.get(ART_KEYS) as Set<string> | undefined) ?? new Set<string>();
+  const real = (key: string) => art.has(key) && scene.textures.exists(key);
+  if (real(`${base}@${biome}`)) return `${base}@${biome}`;
+  if (real(base)) return base;
+  return scene.textures.exists(`${base}@${biome}`) ? `${base}@${biome}` : base;
 }
 
 function portalTile(ctx: CanvasRenderingContext2D, fill: string, glow: string, dark: string): void {
@@ -278,11 +384,20 @@ const ICON_PAL: Palette = { k: '#0b0b0d', w: '#e6e6e6', r: '#c8323a', y: '#f2c94
 
 /** Creates every placeholder texture whose key is not already loaded from real art. */
 export function createPlaceholderTextures(scene: Phaser.Scene): void {
-  canvasTexture(scene, 'tile_ground', 32, 32, (c) => groundTile(c, false));
-  canvasTexture(scene, 'tile_ground_locked', 32, 32, (c) => groundTile(c, true));
-  canvasTexture(scene, 'tile_high', 32, 32, (c) => highTile(c, false));
-  canvasTexture(scene, 'tile_high_locked', 32, 32, (c) => highTile(c, true));
-  canvasTexture(scene, 'tile_wall', 32, 32, wallTile);
+  for (const [biome, pal] of Object.entries(BIOMES)) {
+    const suffix = biome === 'city' ? '' : `@${biome}`;
+    canvasTexture(scene, `tile_ground${suffix}`, 32, 32, (c) => groundTile(c, pal, false));
+    canvasTexture(scene, `tile_ground_locked${suffix}`, 32, 32, (c) => groundTile(c, pal, true));
+    canvasTexture(scene, `tile_high${suffix}`, 32, 32, (c) => highTile(c, pal, false));
+    canvasTexture(scene, `tile_high_locked${suffix}`, 32, 32, (c) => highTile(c, pal, true));
+    canvasTexture(scene, `tile_wall${suffix}`, 32, 32, (c) => wallTile(c, pal));
+  }
+  canvasTexture(scene, 'tile_spawn_air', 32, 32, (c) => {
+    portalTile(c, '#141c26', '#7fe0ff', '#0b0e13');
+    px(c, 8, 14, 16, 2, '#0b0e13');
+    px(c, 6, 12, 6, 2, '#7fe0ff');
+    px(c, 20, 12, 6, 2, '#7fe0ff');
+  });
   canvasTexture(scene, 'tile_spawn', 32, 32, (c) => portalTile(c, '#1e2a3a', '#bfd7ff', '#101318'));
   canvasTexture(scene, 'tile_base', 32, 32, (c) => portalTile(c, '#3a1416', '#c8323a', '#1a0a0b'));
 
@@ -324,6 +439,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
 
 /** Queues every sprite from the manifest; call from a scene's create() and then start the loader. */
 export function queueManifest(scene: Phaser.Scene, manifest: Manifest | undefined): void {
+  scene.registry.set(ART_KEYS, new Set(Object.keys(manifest?.sprites ?? {}).filter((k) => !k.startsWith('_'))));
   for (const [key, s] of Object.entries(manifest?.sprites ?? {})) {
     if (key.startsWith('_')) continue;
     const url = `assets/${s.file}`;

@@ -2,6 +2,7 @@
 // It builds a plan once (who goes where, facing which way, in which order) from the
 // map geometry, then deploys/redeploys following that plan as DP allows.
 
+import { ENEMIES } from '../data/enemies';
 import type { Dir, OperatorDef, Point } from '../data/types';
 import { DIRS } from '../data/types';
 import type { Battle } from './battle';
@@ -48,13 +49,14 @@ function priority(def: OperatorDef, seen: Map<string, number>): number {
 export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
   const grid: Grid = battle.grid;
   const ground = new Map<number, PathInfo & { tile: Point }>();
-  const air = new Set<number>();
+  /** Air tiles, counted once per flying route that crosses them. */
+  const air = new Map<number, number>();
 
   let routeCount = 0;
   for (const route of battle.level.routes) {
     const tiles = routeTiles(grid, route);
     if (route.flying) {
-      for (const t of tiles) air.add(tileKey(t[0], t[1]));
+      for (const t of tiles) air.set(tileKey(t[0], t[1]), (air.get(tileKey(t[0], t[1])) ?? 0) + 1);
       continue;
     }
     const routeId = routeCount++;
@@ -156,7 +158,7 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
         const key = tileKey(x, y);
         let v = 0;
         if (ground.has(key)) v += 1;
-        if (def.canHitAir && air.has(key)) v += def.prioritizeAir ? 1.5 : 0.5;
+        if (def.canHitAir && air.has(key)) v += air.get(key)! * (def.tags.includes('antiAir') ? 3 : 0.5);
         const near = meleeTiles.find((m) => chebyshev(m.tile, [x, y]) <= 1);
         if (near && ground.has(key)) v += 2 * (near.weight === 3 ? 1.5 : 1);
         s += v / (1 + (rangedCover.get(key) ?? 0));
@@ -190,6 +192,9 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
   for (const p of plan) {
     if (primary.has(tileKey(p.x, p.y))) prio.set(p.op, -1 + battle.rosterEntry(p.op)!.def.cost / 1000);
   }
+  // Air raids: get the anti-air sniper out right after the first blockers.
+  const hasAir = battle.level.waves.some((wave) => ENEMIES[wave.enemy]?.flying);
+  if (hasAir) for (const d of defs) if (d.tags.includes('antiAir')) prio.set(d.id, Math.min(prio.get(d.id)!, 1.5));
   return plan.sort((a, b) => prio.get(a.op)! - prio.get(b.op)!);
 }
 

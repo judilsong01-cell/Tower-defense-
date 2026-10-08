@@ -1,6 +1,6 @@
 import type { Dir, LevelDef, Offset, Placement, Point, RouteDef } from '../data/types';
 
-export type TileKind = 'ground' | 'groundLocked' | 'high' | 'highLocked' | 'wall' | 'spawn' | 'base';
+export type TileKind = 'ground' | 'groundLocked' | 'high' | 'highLocked' | 'wall' | 'spawn' | 'airSpawn' | 'base';
 
 const CHAR_TO_KIND: Record<string, TileKind> = {
   '.': 'ground',
@@ -9,6 +9,7 @@ const CHAR_TO_KIND: Record<string, TileKind> = {
   h: 'highLocked',
   '#': 'wall',
   S: 'spawn',
+  A: 'airSpawn',
   B: 'base',
 };
 
