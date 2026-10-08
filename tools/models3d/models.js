@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { G, part, group, limb, head, hair, body, arms, HEAD_R, HEAD_Y } from './kit.js';
+import { G, part, group, limb, head, hair, body, arms, rig, hold, flash, HEAD_R, HEAD_Y } from './kit.js';
 
 // ---------------------------------------------------------------------------
 // Shared props
@@ -72,7 +72,7 @@ function brasa() {
   belt(root, '#26232b');
   scarf(root, '#cc3138');
   arms(root, c, { r: [[0.46, 0.75, 0.15], [0.42, 0.66, 0.38]] });
-  sword(root, [0.42, 0.66, 0.38], [0.9, 0, -0.35]);
+  hold(root, sword(root, [0.42, 0.66, 0.38], [0.9, 0, -0.35]));
   const h = head(root, c);
   hair(h, c.hair, { bangs: 5, side: 0.3 });
   for (const [x, y, z, rx, rz] of [[0.05, 0.56, -0.05, -0.4, -0.2], [-0.25, 0.48, 0.05, 0.1, 0.6], [0.28, 0.46, 0.05, 0.1, -0.6]]) part(h, G.cone(0.13, 0.32), c.hair, [x, y, z], [rx, 0, rz]);
@@ -89,7 +89,7 @@ function faisca() {
   for (const s of [-1, 1]) part(root, G.box(0.05, 0.42, 0.05), '#f2802c', [s * 0.12, 0.74, 0.3]);
   belt(root, '#3b3030', '#f2802c');
   arms(root, c, { r: [[0.47, 0.72, 0.12], [0.45, 0.58, 0.3]] });
-  dagger(root, [0.45, 0.58, 0.3], [2.4, 0, 0.3]);
+  hold(root, dagger(root, [0.45, 0.58, 0.3], [2.4, 0, 0.3]));
   const h = head(root, c);
   hair(h, c.hair, { bangs: 4, side: 0.15, bangLen: 0.3 });
   for (let i = 0; i < 7; i++) {
@@ -114,7 +114,7 @@ function muralha() {
   part(root, G.box(0.08, 0.2, 0.04), '#cc3138', [0, 0.8, 0.33]);
   belt(root, '#3e3a48');
   arms(root, c, { r: [[0.44, 0.74, 0.18], [0.36, 0.66, 0.42]] });
-  towerShield(root, [0.32, 0.6, 0.55], '#6e7784', '#cc3138');
+  hold(root, towerShield(root, [0.32, 0.6, 0.55], '#6e7784', '#cc3138'));
   const h = head(root, c);
   hair(h, c.hair, { bangs: 5, side: 0.12, bangLen: 0.28 });
   return root;
@@ -134,6 +134,7 @@ function bastiao() {
   part(sh, G.cyl(0.24, 0.24, 0.08, 32), '#c8955a', [0, 0, 0.005], [Math.PI / 2, 0, 0]);
   part(sh, G.box(0.06, 0.24, 0.04), '#cc3138', [0, 0, 0.05]);
   part(sh, G.box(0.24, 0.06, 0.04), '#cc3138', [0, 0, 0.05]);
+  hold(root, sh, 'L');
   // mace raised
   const m = group(root, [0.42, 1.2, 0.15], [0.2, 0, -0.3]);
   part(m, G.cyl(0.035, 0.035, 0.6), '#6b4a33', [0, 0.2, 0]);
@@ -142,6 +143,7 @@ function bastiao() {
     const a = (i / 6) * Math.PI * 2;
     part(m, G.cone(0.04, 0.12, 6), '#c4cbd6', [Math.cos(a) * 0.14, 0.52, Math.sin(a) * 0.14], [0, -a, Math.PI / 2]);
   }
+  hold(root, m);
   const h = head(root, c);
   hair(h, c.hair, { bangs: 3, side: 0.1, bangLen: 0.22 });
   // short beard
@@ -162,6 +164,8 @@ function lirio() {
   part(kit, G.box(0.07, 0.17, 0.02), '#d6333b', [0, 0, 0.1]);
   part(kit, G.box(0.17, 0.07, 0.02), '#d6333b', [0, 0, 0.1]);
   part(kit, G.torus(0.07, 0.02, Math.PI), '#9aa2ae', [0, 0.14, 0]);
+  hold(root, kit);
+  flash(rig(root).armR, [0.12, -0.15, 0.3], '#7dffa1', 0.18);
   const h = head(root, c);
   hair(h, c.hair, { bangs: 6, side: 0.75, back: 1.1 });
   limb(h, [0, -0.05, -0.45], [0, -0.85, -0.5], 0.3, c.hair);
@@ -176,7 +180,8 @@ function corvo() {
   part(root, G.torus(0.22, 0.1), '#cc3138', [0, 0.97, 0.03], [Math.PI / 2 - 0.1, 0, 0], [1, 1, 0.9]);
   limb(root, [-0.12, 0.95, -0.2], [-0.2, 0.55, -0.32], 0.07, '#cc3138');
   arms(root, c, { r: [[0.4, 0.78, 0.25], [0.28, 0.78, 0.5]], l: [[-0.25, 0.78, 0.25], [0.0, 0.8, 0.55]] });
-  rifle(root, [0.12, 0.84, 0.45], [0, 0, 0], '#2f343d', 1.25);
+  const rf = hold(root, rifle(root, [0.12, 0.84, 0.45], [0, 0, 0], '#2f343d', 1.25));
+  flash(rf, [0, 0.03, 1.25], '#ffd27a', 0.12);
   const h = head(root, c);
   hair(h, c.hair, { bangs: 6, side: 0.35, bangLen: 0.42 });
   for (const [x, z, r] of [[-0.3, -0.2, 0.8], [0.0, -0.32, 0], [0.3, -0.2, -0.8]]) part(h, G.cone(0.14, 0.34), c.hair, [x, 0.3, z], [-1.2, 0, r]);
@@ -192,7 +197,8 @@ function falcao() {
   for (const s of [-1, 1]) part(root, G.box(0.12, 0.14, 0.06), '#5a4f40', [s * 0.15, 0.68, 0.3]);
   belt(root, '#2a241d');
   arms(root, c, { r: [[0.45, 0.78, 0.2], [0.35, 0.95, 0.42]], l: [[-0.3, 0.7, 0.3], [0.1, 0.72, 0.45]] });
-  rifle(root, [0.22, 0.85, 0.45], [-0.95, 0.2, 0], '#40454f', 1.3);
+  const rf = hold(root, rifle(root, [0.22, 0.85, 0.45], [-0.95, 0.2, 0], '#40454f', 1.3));
+  flash(rf, [0, 0.03, 1.3], '#ffd27a', 0.13);
   const h = head(root, c);
   hair(h, c.hair, { bangs: 4, side: 0.18, bangLen: 0.25 });
   part(h, G.torus(0.48, 0.035), '#3b3030', [0, 0.2, -0.03], [Math.PI / 2 - 0.3, 0, 0]);
@@ -216,6 +222,8 @@ function trovao() {
   part(l, G.cyl(0.16, 0.16, 0.12, 24), '#2a2c32', [0, 0, 0.88], [Math.PI / 2, 0, 0]);
   part(l, G.cyl(0.1, 0.1, 0.13, 16), '#cc3138', [0, 0, 0.95], [Math.PI / 2, 0, 0], [1, 1, 1], { glow: true, outline: false });
   part(l, G.box(0.08, 0.2, 0.12), '#2a2c32', [0, -0.18, 0.1]);
+  hold(root, l);
+  flash(l, [0, 0, 1.08], '#ffb347', 0.22);
   const h = head(root, c);
   hair(h, c.hair, { bangs: 3, side: 0.12, bangLen: 0.2 });
   // beanie
@@ -248,6 +256,8 @@ function peacekeeper() {
   const b = group(root, [0.45, 0.56, 0.28], [1.1, 0, -0.2]);
   part(b, G.cyl(0.04, 0.04, 0.62), '#1d1f25', [0, 0.25, 0]);
   part(b, G.cyl(0.05, 0.05, 0.1), '#6fbfff', [0, 0.58, 0], [0, 0, 0], [1, 1, 1], { glow: true });
+  hold(root, b);
+  flash(b, [0, 0.62, 0], '#8fdcff', 0.1);
   return root;
 }
 
@@ -255,7 +265,8 @@ function rifleman() {
   const c = { ...WHITE, coat: '#c4c9d2', pants: '#9ba2ae', sleeve: '#b4bac5' };
   const root = soldier(c, '#dfe3ea');
   arms(root, c, { r: [[0.4, 0.78, 0.25], [0.28, 0.78, 0.5]], l: [[-0.25, 0.78, 0.25], [0.0, 0.8, 0.55]] });
-  rifle(root, [0.12, 0.84, 0.45], [0, 0, 0], '#2c2f36', 1.0, '#3a3d46');
+  const rf = hold(root, rifle(root, [0.12, 0.84, 0.45], [0, 0, 0], '#2c2f36', 1.0, '#3a3d46'));
+  flash(rf, [0, 0.03, 1.0], '#8fdcff', 0.11);
   return root;
 }
 
@@ -272,6 +283,7 @@ function riot() {
   part(sh, G.box(0.66, 1.15, 0.06), '#a9c6e8', [0, 0, 0], [0, 0, 0], [1, 1, 1], { opacity: 0.75 });
   part(sh, G.box(0.42, 0.06, 0.07), '#14161c', [0, 0.32, 0]);
   part(sh, G.box(0.72, 0.06, 0.08), '#4a6a94', [0, -0.56, 0]);
+  hold(root, sh);
   return root;
 }
 
@@ -286,6 +298,8 @@ function medic() {
   part(kit, G.box(0.34, 0.26, 0.18), '#f4f6f9');
   part(kit, G.box(0.07, 0.17, 0.02), '#4fb0ff', [0, 0, 0.1], [0, 0, 0], [1, 1, 1], { glow: true });
   part(kit, G.box(0.17, 0.07, 0.02), '#4fb0ff', [0, 0, 0.1], [0, 0, 0], [1, 1, 1], { glow: true });
+  hold(root, kit);
+  flash(rig(root).armR, [0.12, -0.15, 0.3], '#8fdcff', 0.18);
   return root;
 }
 
@@ -302,7 +316,9 @@ function incinerator() {
   part(f, G.cyl(0.05, 0.06, 0.7), '#3a3e48', [0, 0, 0.25], [Math.PI / 2, 0, 0]);
   part(f, G.cyl(0.07, 0.07, 0.1), '#8a92a0', [0, 0, 0.62], [Math.PI / 2, 0, 0]);
   part(f, G.cone(0.16, 0.5, 16), '#ff8a1a', [0, 0, 0.92], [-Math.PI / 2, 0, 0], [1, 1, 1], { glow: true, outline: false, opacity: 0.9 });
-  part(f, G.cone(0.08, 0.32, 16), '#ffe07a', [0, 0, 0.82], [-Math.PI / 2, 0, 0], [1, 1, 1], { glow: true, outline: false });
+  const inner = part(f, G.cone(0.08, 0.32, 16), '#ffe07a', [0, 0, 0.82], [-Math.PI / 2, 0, 0], [1, 1, 1], { glow: true, outline: false });
+  rig(root).flame = [f.children[2], inner];
+  hold(root, f);
   const h = head(root, c);
   part(h, G.sphere(HEAD_R * 1.08), '#8a7258', [0, 0.02, -0.02]);
   for (const s of [-1, 1]) {
@@ -321,7 +337,7 @@ function infiltrator() {
   part(root, G.box(0.04, 0.4, 0.03), '#2fc8e0', [0.2, 0.75, 0.31], [0, 0, 0], [1, 1, 1], { glow: true, outline: false });
   belt(root, '#101216', '#2fc8e0');
   arms(root, c, { r: [[0.47, 0.72, 0.12], [0.45, 0.58, 0.3]] });
-  const k = dagger(root, [0.45, 0.58, 0.3], [1.3, 0, -0.3]);
+  const k = hold(root, dagger(root, [0.45, 0.58, 0.3], [1.3, 0, -0.3]));
   k.children[1].material = k.children[1].material.clone();
   k.children[1].material.color.set('#2fc8e0');
   const h = head(root, c);
@@ -347,6 +363,7 @@ function executor() {
   part(m, G.cyl(0.04, 0.04, 0.95), '#4a3a2c', [0, 0.3, 0]);
   part(m, G.box(0.5, 0.28, 0.28), '#9aa2ae', [0, 0.78, 0]);
   part(m, G.box(0.54, 0.06, 0.3), '#6fbfff', [0, 0.78, 0], [0, 0, 0], [1, 1, 1], { glow: true, outline: false });
+  hold(inner, m);
   const h = head(inner, c);
   helmet(h, '#2e3139', '#0b0c0f', '#8fdcff');
   return root;
@@ -360,10 +377,12 @@ function cleric() {
   part(root, G.torus(0.16, 0.06), '#f4f4f6', [0, 0.96, 0.03], [Math.PI / 2 - 0.15, 0, 0]);
   part(root, G.box(0.06, 0.5, 0.04), '#2c2c36', [0, 0.72, 0.32]);
   arms(root, c, { r: [[0.4, 0.75, 0.25], [0.12, 0.72, 0.5]], l: [[-0.4, 0.75, 0.25], [-0.12, 0.76, 0.5]] });
-  for (const [x, ry] of [[0.12, -0.5], [-0.12, 0.5]]) {
+  for (const [x, ry, side] of [[0.12, -0.5, 'R'], [-0.12, 0.5, 'L']]) {
     const g = group(root, [x, 0.74, 0.52], [0, ry, 0]);
     part(g, G.box(0.06, 0.08, 0.32), '#c9d1db', [0, 0.02, 0.12]);
     part(g, G.box(0.05, 0.14, 0.06), '#3a3e48', [0, -0.06, -0.02]);
+    hold(root, g, side);
+    flash(g, [0, 0.02, 0.32], '#8fdcff', 0.1, side === 'R' ? 'flash' : 'flash2');
   }
   const h = head(root, c);
   hair(h, c.hair, { bangs: 0, side: 0.0 });
@@ -378,12 +397,17 @@ function hound() {
   part(root, G.capsule(0.22, 0.55), dark, [0, 0.62, 0], [Math.PI / 2, 0, 0], [1, 1, 0.95]);
   part(root, G.box(0.36, 0.1, 0.5), plate, [0, 0.82, 0.02]);
   part(root, G.box(0.1, 0.04, 0.3), '#6fbfff', [0, 0.88, 0.02], [0, 0, 0], [1, 1, 1], { glow: true, outline: false });
+  const legs = [];
   for (const [x, z] of [[-0.14, 0.35], [0.14, 0.35], [-0.14, -0.3], [0.14, -0.3]]) {
-    limb(root, [x, 0.55, z], [x, 0.08, z + 0.05], 0.07, dark);
-    part(root, G.sphere(0.08), '#1b1d22', [x, 0.06, z + 0.09], [0, 0, 0], [1, 0.6, 1.4]);
+    const hip = group(root, [x, 0.55, z]);
+    limb(hip, [0, 0, 0], [0, -0.47, 0.05], 0.07, dark);
+    part(hip, G.sphere(0.08), '#1b1d22', [0, -0.49, 0.09], [0, 0, 0], [1, 0.6, 1.4]);
+    legs.push(hip);
   }
+  rig(root).legs = legs;
   limb(root, [0, 0.75, -0.55], [0, 0.95, -0.8], 0.05, dark);
   const h = group(root, [0, 0.95, 0.6]);
+  rig(root).head = h;
   part(h, G.sphere(0.24), dark, [0, 0, 0], [0, 0, 0], [0.9, 0.9, 1.1]);
   part(h, G.capsule(0.12, 0.2), dark, [0, -0.07, 0.25], [Math.PI / 2, 0, 0]);
   part(h, G.sphere(0.05), '#111215', [0, -0.03, 0.43]);
@@ -405,8 +429,12 @@ function droneBody(body, lens, opts = {}) {
   for (const [x, z] of [[-0.8, 0.45], [0.8, 0.45], [-0.8, -0.45], [0.8, -0.45]]) {
     limb(root, [x * 0.55, y + 0.05, z * 0.55], [x, y + 0.15, z], 0.04, opts.arm ?? '#3a3d46');
     part(root, G.cyl(0.05, 0.05, 0.12), '#3a3d46', [x, y + 0.22, z]);
-    part(root, G.cyl(0.32, 0.32, 0.015, 32), '#c9d0da', [x, y + 0.3, z], [0, 0, 0], [1, 1, 1], { opacity: 0.45, outline: false });
+    part(root, G.cyl(0.32, 0.32, 0.012, 32), '#c9d0da', [x, y + 0.3, z], [0, 0, 0], [1, 1, 1], { opacity: 0.25, outline: false });
+    const rotor = group(root, [x, y + 0.31, z]);
+    part(rotor, G.box(0.62, 0.02, 0.07), '#5a606d', [0, 0, 0], [0, 0, 0], [1, 1, 1], { outline: false });
+    (rig(root).rotors ??= []).push(rotor);
   }
+  rig(root).body = root.children[0];
   return root;
 }
 
@@ -423,6 +451,7 @@ function gunship() {
     part(root, G.cyl(0.035, 0.035, 0.35), '#8a92a0', [s * 0.3, 0.85, 0.55], [Math.PI / 2, 0, 0]);
   }
   part(root, G.box(0.08, 0.08, 0.08), '#f2c94c', [-0.45, 1.12, 0.32], [0, 0, 0], [1, 1, 1], { glow: true, outline: false });
+  for (const s of [-1, 1]) flash(root, [s * 0.3, 0.85, 0.75], '#ff7a7a', 0.1);
   return root;
 }
 
@@ -431,7 +460,12 @@ function armored() {
   const hull = '#dfe3ea';
   for (const s of [-1, 1]) {
     part(root, G.box(0.36, 0.42, 1.9), '#3a3d46', [s * 0.62, 0.28, 0]);
-    for (let i = 0; i < 5; i++) part(root, G.cyl(0.15, 0.15, 0.38, 20), '#5c6270', [s * 0.62, 0.22, -0.72 + i * 0.36], [0, 0, Math.PI / 2]);
+    for (let i = 0; i < 5; i++) {
+      const wheel = group(root, [s * 0.62, 0.22, -0.72 + i * 0.36]);
+      part(wheel, G.cyl(0.15, 0.15, 0.38, 20), '#5c6270', [0, 0, 0], [0, 0, Math.PI / 2]);
+      part(wheel, G.box(0.4, 0.05, 0.22), '#3a3d46', [0, 0, 0], [0, 0, 0], [1, 1, 1], { outline: false });
+      (rig(root).wheels ??= []).push(wheel);
+    }
   }
   part(root, G.box(1.1, 0.42, 1.7), hull, [0, 0.62, 0]);
   part(root, G.box(1.2, 0.12, 1.85), '#b9bfc9', [0, 0.45, 0]);
@@ -442,6 +476,8 @@ function armored() {
   part(t, G.sphere(0.42, 32), '#d7dbe3', [0, 0.1, 0], [0, 0, 0], [1, 0.45, 1]);
   part(t, G.cyl(0.07, 0.08, 1.2, 16), '#8a92a0', [0, 0.05, 0.85], [Math.PI / 2, 0, 0]);
   part(t, G.box(0.3, 0.06, 0.04), '#6fbfff', [0, 0.08, 0.42], [0, 0, 0], [1, 1, 1], { glow: true, outline: false });
+  rig(root).turret = t;
+  flash(t, [0, 0.05, 1.5], '#ffd27a', 0.2);
   return root;
 }
 
@@ -450,6 +486,19 @@ const BUILDERS = { brasa, faisca, muralha, bastiao, lirio, corvo, falcao, trovao
 export function build(id) {
   const fn = BUILDERS[id];
   if (!fn) throw new Error('unknown model ' + id);
-  return fn();
+  const root = fn();
+  const merged = {};
+  root.traverse((o) => {
+    const r = o.userData.rig;
+    if (!r) return;
+    for (const [k, v] of Object.entries(r)) {
+      if (Array.isArray(v) && Array.isArray(merged[k])) merged[k].push(...v);
+      else if (!(k in merged)) merged[k] = v;
+    }
+  });
+  root.userData.rig = merged;
+  root.userData.isModelRoot = true;
+  root.userData.id = id;
+  return root;
 }
 export const IDS = Object.keys(BUILDERS);

@@ -68,6 +68,33 @@ export function limb(parent, a, b, r, color, opts) {
   return m;
 }
 
+// ---- rig -------------------------------------------------------------------
+/** Named pivots used by the animations (head, armL/armR, legL/legR, flash, rotors…). */
+export function rig(root) {
+  root.userData.rig ??= {};
+  return root.userData.rig;
+}
+
+/** Re-parents a prop (weapon, shield…) to an arm pivot, keeping its current placement. */
+export function hold(root, obj, side = 'R') {
+  root.updateMatrixWorld(true);
+  rig(root)['arm' + side].attach(obj);
+  return obj;
+}
+
+/** A glowing flash (muzzle fire, heal sparkle) hidden until an attack frame shows it. */
+export function flash(parent, pos, color, size = 0.12, key = 'flash') {
+  const g = group(parent, pos);
+  part(g, G.sphere(size, 16), color, [0, 0, 0], [0, 0, 0], [1, 1, 1], { glow: true, outline: false, opacity: 0.85 });
+  part(g, G.sphere(size * 0.55, 16), '#ffffff', [0, 0, 0], [0, 0, 0], [1, 1, 1], { glow: true, outline: false });
+  g.visible = false;
+  let root = parent;
+  while (root.parent && !root.userData.isModelRoot) root = root.parent;
+  const r = rig(root);
+  (r[key] ??= []).push(g);
+  return g;
+}
+
 // ---- chibi humanoid ----------------------------------------------------------
 // Faces +z. Height ~2. Head centre at y=1.38.
 export const HEAD_Y = 1.38;
@@ -75,6 +102,7 @@ export const HEAD_R = 0.52;
 
 export function head(root, c) {
   const h = group(root, [0, HEAD_Y, 0]);
+  rig(root).head = h;
   part(h, G.sphere(HEAD_R), c.skin, [0, 0, 0], [0, 0, 0], [1, 0.96, 0.95]);
   // ears
   part(h, G.sphere(0.09), c.skin, [-0.5, -0.04, 0.0], [0, 0, 0], [0.6, 1, 1]);
@@ -129,8 +157,10 @@ export function body(root, c, opts = {}) {
   part(root, G.cyl(0.3, 0.3, 0.12, 24), c.pants, [0, 0.47, 0]);
   // legs
   for (const side of [-1, 1]) {
-    limb(root, [side * 0.13, 0.45, 0], [side * 0.14, 0.14, 0.02], 0.1, c.pants);
-    part(root, G.sphere(0.13), c.boots, [side * 0.14, 0.08, 0.06], [0, 0, 0], [0.95, 0.65, 1.35]);
+    const hip = group(root, [side * 0.13, 0.45, 0]);
+    rig(root)[side < 0 ? 'legL' : 'legR'] = hip;
+    limb(hip, [0, 0, 0], [side * 0.01, -0.31, 0.02], 0.1, c.pants);
+    part(hip, G.sphere(0.13), c.boots, [side * 0.01, -0.37, 0.06], [0, 0, 0], [0.95, 0.65, 1.35]);
   }
   // neck
   part(root, G.cyl(0.09, 0.1, 0.16, 16), c.skin, [0, 1.0, 0], [0, 0, 0], [1, 1, 1], { outline: false });
@@ -143,9 +173,12 @@ export function arms(root, c, pose = {}) {
   const out = {};
   for (const s of ['l', 'r']) {
     const [elbow, hand] = pose[s] ?? def[s];
-    limb(root, sh[s], elbow, 0.085, c.sleeve ?? c.coat);
-    limb(root, elbow, hand, 0.078, c.sleeve ?? c.coat);
-    part(root, G.sphere(0.09), c.gloves ?? c.skin, hand);
+    const p = group(root, sh[s]);
+    rig(root)[s === 'l' ? 'armL' : 'armR'] = p;
+    const rel = (v) => [v[0] - sh[s][0], v[1] - sh[s][1], v[2] - sh[s][2]];
+    limb(p, [0, 0, 0], rel(elbow), 0.085, c.sleeve ?? c.coat);
+    limb(p, rel(elbow), rel(hand), 0.078, c.sleeve ?? c.coat);
+    part(p, G.sphere(0.09), c.gloves ?? c.skin, rel(hand));
     out[s] = hand;
   }
   return out;

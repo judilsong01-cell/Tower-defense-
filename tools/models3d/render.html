@@ -6,6 +6,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { build } from './models.js';
+import { pose } from './anim.js';
 
 const params = new URLSearchParams(location.search);
 const id = params.get('id') || 'brasa';
@@ -48,10 +49,18 @@ const size = box.getSize(new THREE.Vector3());
 const center = box.getCenter(new THREE.Vector3());
 const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 100);
 const aspect = W / H;
-const fit = Math.max(size.y * 1.12, (Math.max(size.x, size.z) / aspect) * 1.1, 2.1);
+const fit = Math.max(size.y * 1.12, (Math.max(size.x, size.z) / aspect) * 1.1, 2.1) * (params.get('anim') ? 1.15 : 1);
 const dist = fit / (2 * Math.tan((camera.fov * Math.PI) / 360));
 camera.position.set(center.x + dist * 0.05, center.y + dist * 0.22, center.z + dist);
 camera.lookAt(center.x, center.y - size.y * 0.02, center.z);
+const bg = params.get('bg');
+if (bg) renderer.setClearColor(bg, 1);
 renderer.render(scene, camera);
+/** Renders one animation frame and returns it as a PNG data URL. */
+window.frame = (anim, t) => {
+  pose(model, anim, t);
+  renderer.render(scene, camera);
+  return renderer.domElement.toDataURL('image/png');
+};
 window.done = true;
 </script></body></html>
