@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { idealOperators } from '../src/data/counters';
 import { ENEMIES } from '../src/data/enemies';
@@ -34,5 +34,9 @@ describe('content', () => {
     for (const id of Object.keys(OPERATORS)) expect(guide.includes(`\`op_${id}\``), id).toBe(true);
     for (const id of Object.keys(ENEMIES)) expect(guide.includes(`\`en_${id}\``), id).toBe(true);
     for (const biome of new Set(LEVELS.map((l) => l.biome))) expect(guide.includes(`\`${biome}\``), biome).toBe(true);
+  });
+
+  it('every stage has a 3D map image', () => {
+    for (const level of LEVELS) expect(existsSync(`public/assets/maps/${level.id}.jpg`), level.id).toBe(true);
   });
 });

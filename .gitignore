@@ -6,3 +6,5 @@ dist/
 *.jks
 *.keystore
 keystore.properties
+tools/models3d/levels.json
+tools/models3d/export/

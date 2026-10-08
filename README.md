@@ -5,7 +5,7 @@ Tower defense em pixel art inspirado nas mecânicas do Arknights, num mundo dist
 
 Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** para a Google Play) com **Capacitor**.
 
-## Estado atual (v0.4)
+## Estado atual (v0.5)
 
 - **30 estágios em 3 capítulos**:
   - Capítulo 1 *Concórdia*: os 10 estágios iniciais.
@@ -16,8 +16,9 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
 - 8 operadores e 12 inimigos. Toca num inimigo em batalha, ou no menu do estágio, para ver a fraqueza dele e o operador ideal.
 - **Personagens 3D animadas**: os 20 bonecos são modelos 3D (estilo chibi, sombreado cartoon) exportados como animações
   (operadores: espera e ataque; inimigos: andar/correr/pairar/rolar e ataque). Fonte em `tools/models3d/`.
-- O jogo corre a 1280×720 (o dobro de antes) para os bonecos aparecerem lisos; mapas e interface mantêm o estilo atual.
-- Biomas placeholder por estágio (cidade, floresta, deserto, gelo, lava, pântano, céu, mar, ruínas, estação, desfiladeiro, caverna).
+- **Mapas 3D**: cada estágio tem um cenário 3D no mesmo estilo, com plataformas elevadas, portais e base, em 12 biomas
+  (cidade, floresta, deserto, gelo, lava, pântano, céu, mar, ruínas, estação, desfiladeiro, caverna). Fonte em `tools/models3d/map3d.js`.
+- O jogo corre a 1280×720 para os bonecos e mapas aparecerem lisos; a interface mantém o estilo pixel.
 - Mecânicas: chão/plataforma, bloqueio, DP, direção de ataque, skills com SP, retirar (devolve 50% do DP),
   redeploy com cooldown e custo crescente, limite de unidades, vidas e 3 estrelas
 - Velocidade x1/x2/x3, pausa e **auto-cast de skills** (botão AUTO SK)

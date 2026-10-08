@@ -31,7 +31,7 @@ do browser. Assim podes ir substituindo aos poucos.
 
 ## Lista completa
 
-**Por fazer: 77 imagens + ícone da app + splash** (as 20 personagens já estão feitas em 3D). Marca `[x]` à medida que fores fazendo.
+**Por fazer: 14 imagens + ícone da app + splash** (as 20 personagens e os 30 mapas já estão feitos em 3D). Marca `[x]` à medida que fores fazendo.
 
 ### 1 e 2. Operadores e inimigos: **já feitos (3D)**
 
@@ -47,7 +47,20 @@ píxeis do frame, usada nas barras de vida).
 | --- | --- |
 | `op_brasa`, `op_faisca`, `op_muralha`, `op_bastiao`, `op_lirio`, `op_corvo`, `op_falcao`, `op_trovao` | `en_peacekeeper`, `en_hound`, `en_riot`, `en_rifleman`, `en_drone`, `en_gunship`, `en_executor`, `en_incinerator`, `en_infiltrator`, `en_medic`, `en_armored`, `en_cleric` |
 
-### 3. Casas do mapa: 32×32, sem animação
+### 3. Mapas: **já feitos (3D)**
+
+Cada estágio tem um fundo 3D pré-renderizado em `public/assets/maps/<estágio>.jpg` (ex.: `l1.jpg`), no mesmo
+estilo das personagens. Para os alterar, edita `tools/models3d/map3d.js` (biomas, cores, adereços) e volta a
+exportar (ver `tools/models3d/README.md`). Pré-visualização: `docs/art-preview/mapas3d_todos.jpg`.
+
+Se quiseres substituir o mapa de um estágio por arte tua, guarda uma imagem com o mesmo nome e formato:
+64 px por casa, com 3 casas de margem à esquerda e à direita, 1,5 em cima e 3,5 em baixo
+(ex.: mapa de 14×7 casas → imagem de 20×12 casas = 1280×768 px). Plataformas (`H`/`h`) devem aparecer
+10 px (do jogo) acima da casa.
+
+#### Casas 2D (opcional, só se faltar a imagem do mapa)
+
+As casas abaixo só são usadas quando um estágio não tem imagem 3D. **Não precisas de as fazer.**
 
 Há **5 casas por bioma** (`ground`, `ground_locked`, `high`, `high_locked`, `wall`) e **3 comuns** a todos.
 
@@ -127,9 +140,8 @@ Depois gera todos os tamanhos com `npx @capacitor/assets generate --android`.
 
 Para veres diferença mais depressa:
 
-1. As **3 casas comuns** e as **5 casas de `city`**, usadas em 12 estágios.
-2. Os biomas pela ordem dos estágios: `lava`, `forest`, `sea`, `canyon`, `desert`, `swamp`, `ice`, `ruins`, `tech`, `sky`, `cave`.
-3. Ícones, efeitos, ícone da app e splash.
+1. Ícones e efeitos.
+2. Ícone da app e splash.
 
 ---
 

@@ -77,6 +77,13 @@ const TILE_TEXTURE: Record<TileKind, string> = {
   base: 'tile_base',
 };
 
+/**
+ * Pre-rendered 3D map backgrounds (public/assets/maps/<level>.jpg, made by tools/models3d/map3d.js).
+ * Each image covers the map plus a margin of tiles around it, at PPU image pixels per tile.
+ * High ground is drawn raised, so units and highlights on it are lifted by LIFT pixels.
+ */
+const MAP3D = { ppu: 64, marginLeft: 3, marginTop: 1.5, lift: 10 };
+
 const DIR_ANGLE: Record<Dir, number> = { right: 0, down: 90, left: 180, up: 270 };
 const DIR_VEC: Record<Dir, [number, number]> = { right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1] };
 
@@ -101,6 +108,8 @@ export class BattleScene extends Phaser.Scene {
   private cards: CardView[] = [];
 
   private overlayGfx!: Phaser.GameObjects.Graphics;
+  /** True when the stage uses a pre-rendered 3D map image instead of tiles. */
+  private map3d = false;
   private barsGfx!: Phaser.GameObjects.Graphics;
   private ghost!: Phaser.GameObjects.Image;
   private arrows: { dir: Dir; img: Phaser.GameObjects.Image }[] = [];
@@ -124,6 +133,12 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() {
     super('Battle');
+  }
+
+  preload(): void {
+    // Optional: without the image the map falls back to the tile textures.
+    const key = `map_${this.level.id}`;
+    if (!this.textures.exists(key)) this.load.image(key, `assets/maps/${this.level.id}.jpg`);
   }
 
   init(data: BattleSceneData): void {
@@ -240,13 +255,22 @@ export class BattleScene extends Phaser.Scene {
   // HUD objects use scrollFactor 0 (see ui()), so they stay fixed on screen.
 
   private tileCenter(x: number, y: number): [number, number] {
-    return [x * TILE + TILE / 2, y * TILE + TILE / 2];
+    return [x * TILE + TILE / 2, y * TILE + TILE / 2 - this.lift(x, y)];
   }
 
-  /** Tile under a screen position, if any. */
+  /** How far a tile's top is drawn above its grid square (raised high ground on 3D maps). */
+  private lift(x: number, y: number): number {
+    if (!this.map3d) return 0;
+    const k = this.battle.grid.kind(x, y);
+    return k === 'high' || k === 'highLocked' ? MAP3D.lift : 0;
+  }
+
+  /** Tile under a screen position, if any. Raised tiles are hit where they are drawn. */
   private tileAt(screenX: number, screenY: number): [number, number] | null {
     const p = this.toWorld(screenX, screenY);
     const x = Math.floor(p.x / TILE);
+    const below = Math.floor((p.y + MAP3D.lift) / TILE);
+    if (this.lift(x, below) && this.battle.grid.inBounds(x, below)) return [x, below];
     const y = Math.floor(p.y / TILE);
     return this.battle.grid.inBounds(x, y) ? [x, y] : null;
   }
@@ -297,6 +321,17 @@ export class BattleScene extends Phaser.Scene {
 
   private drawMap(): void {
     const grid = this.battle.grid;
+    const key = `map_${this.level.id}`;
+    this.map3d = this.textures.exists(key);
+    if (this.map3d) {
+      const tex = this.textures.get(key);
+      tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      this.cameras.main.setBackgroundColor(0x0b0c10);
+      // Big image: free it when the battle ends instead of keeping one per stage played.
+      this.events.once('shutdown', () => this.textures.remove(key));
+      this.add.image(-MAP3D.marginLeft * TILE, -MAP3D.marginTop * TILE, key).setOrigin(0, 0).setScale(TILE / MAP3D.ppu).setDepth(0);
+      return;
+    }
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
         const key = tileTextureKey(this, TILE_TEXTURE[grid.kind(x, y)], this.level.biome);
@@ -948,7 +983,7 @@ export class BattleScene extends Phaser.Scene {
         for (let x = 0; x < grid.width; x++) {
           if (!this.battle.canDeployAt(s.op, x, y)) continue;
           const px = x * TILE;
-          const py = y * TILE;
+          const py = y * TILE - this.lift(x, y);
           g.fillStyle(COLORS.red, 0.28).fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
           g.lineStyle(1, COLORS.redLight, 0.9).strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
         }
@@ -995,7 +1030,7 @@ export class BattleScene extends Phaser.Scene {
     for (const [x, y] of tiles) {
       if (!this.battle.grid.inBounds(x, y)) continue;
       const px = x * TILE;
-      const py = y * TILE;
+      const py = y * TILE - this.lift(x, y);
       g.fillStyle(color, 0.22).fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
       g.lineStyle(1, color, 0.8).strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
     }
