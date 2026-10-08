@@ -48,7 +48,7 @@ npm run android:apk
 - A **primeira vez demora** (5 a 15 minutos): descarrega o Gradle e as bibliotecas Android. Precisa de internet.
   As seguintes demoram menos de 1 minuto.
 - No fim aparece `Pronto: TowerDefense.apk`. O ficheiro fica na pasta do projeto:
-  `Tower-defense-\TowerDefense.apk` (cerca de 30 MB).
+  `Tower-defense-\TowerDefense.apk` (cerca de 13 MB).
 
 ---
 
@@ -104,7 +104,7 @@ sempre gerado no **mesmo PC**.
 ## 6. Alternativa: descarregar o APK do GitHub (sem instalar nada no PC)
 
 1. No GitHub do projeto: **Actions → Android APK (teste) → Run workflow → Run workflow**.
-2. Espera uns 5 minutos até ficar verde ✓, abre a execução e descarrega **TowerDefense-apk** em *Artifacts*.
+2. Espera uns 3 minutos até ficar verde ✓, abre a execução e descarrega **TowerDefense-apk** em *Artifacts*.
 3. É um `.zip`: extrai o `TowerDefense.apk` e instala-o como na Forma A.
 
 > O APK do GitHub e o do teu PC têm assinaturas diferentes. Para trocar de um para o outro tens de
