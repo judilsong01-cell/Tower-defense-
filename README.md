@@ -11,6 +11,8 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
   com pré-visualização do mapa 3D e ecrã de **equipa** com os modelos 3D animados, estatísticas, alcance e skill.
 - **Equipa à escolha**: escolhes até 8 operadores; a equipa vale para todos os estágios (deck, IA e replays).
 - **Progressão**: cada estágio só abre depois de fazeres **3 estrelas** no anterior.
+- **Colocação fácil no celular**: o mapa abre ampliado (casas de ~9 mm), **belisca para aproximar/afastar**
+  (no PC: Ctrl + roda do rato) e a colocação é magnética: largas perto de uma casa válida e o operador vai para ela.
 - **Ecrã inteiro no celular**: a largura do jogo adapta-se ao formato do ecrã (16:9 até 2.4:1, ex. 20:9 no A21s).
 
 - **30 estágios em 3 capítulos**:

@@ -13,6 +13,8 @@ export interface SaveData {
   version: 1;
   lang?: Lang;
   autoSkill: boolean;
+  /** Last map zoom chosen in battle (pinch / ctrl+wheel). */
+  mapZoom?: number;
   levels: Record<string, LevelProgress>;
   /** Operator ids chosen in the squad screen, in deck order. Missing: the default squad. */
   squad?: string[];

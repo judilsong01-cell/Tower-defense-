@@ -33,8 +33,16 @@ interface Pt {
   x: number;
   y: number;
   isDown: boolean;
+  touch: boolean;
 }
-const logical = (p: Phaser.Input.Pointer): Pt => ({ x: p.x / ZOOM, y: p.y / ZOOM, isDown: p.isDown });
+const logical = (p: Phaser.Input.Pointer): Pt => ({ x: p.x / ZOOM, y: p.y / ZOOM, isDown: p.isDown, touch: p.wasTouch });
+
+/** Map zoom range (on top of ZOOM). Phones start zoomed in so tiles are big enough for a finger. */
+const MAP_ZOOM_MIN = 1;
+const MAP_ZOOM_MAX = 2.2;
+const MAP_ZOOM_TOUCH = 1.5;
+/** On touch, deploy targets sit a little above the fingertip so the finger does not hide them. */
+const TOUCH_AIM_Y = -8;
 
 interface Driver {
   update(battle: Battle): void;
@@ -111,6 +119,12 @@ export class BattleScene extends Phaser.Scene {
   private overlayGfx!: Phaser.GameObjects.Graphics;
   /** True when the stage uses a pre-rendered 3D map image instead of tiles. */
   private map3d = false;
+  /** Extra zoom of the map camera; the HUD camera always stays at ZOOM. */
+  private mapZoom = 1;
+  private uiCam!: Phaser.Cameras.Scene2D.Camera;
+  private pinch: { dist: number; zoom: number; anchorX: number; anchorY: number } | null = null;
+  /** Tile the dragged operator would land on (highlighted). */
+  private dragTarget: [number, number] | null = null;
   private barsGfx!: Phaser.GameObjects.Graphics;
   private ghost!: Phaser.GameObjects.Image;
   private arrows: { dir: Dir; img: Phaser.GameObjects.Image }[] = [];
@@ -163,8 +177,21 @@ export class BattleScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setOrigin(0, 0).setZoom(ZOOM);
-    this.events.once('shutdown', () => (this.anims.globalTimeScale = 1));
+    // Two cameras: the map camera zooms and scrolls, the HUD camera stays fixed at ZOOM.
+    // New objects belong to the map unless ui() moves them to the HUD.
+    const touch = this.sys.game.device.input.touch;
+    this.mapZoom = Phaser.Math.Clamp(loadSave().mapZoom ?? (touch ? MAP_ZOOM_TOUCH : 1), MAP_ZOOM_MIN, MAP_ZOOM_MAX);
+    this.cameras.main.setOrigin(0, 0).setZoom(ZOOM * this.mapZoom);
+    const old = this.cameras.getCamera('ui');
+    if (old) this.cameras.remove(old);
+    this.uiCam = this.cameras.add(0, 0, GAME_W * ZOOM, GAME_H * ZOOM, false, 'ui').setOrigin(0, 0).setZoom(ZOOM);
+    const toMap = (o: Phaser.GameObjects.GameObject) => this.uiCam.ignore(o);
+    this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, toMap);
+    this.pinch = null;
+    this.events.once('shutdown', () => {
+      this.anims.globalTimeScale = 1;
+      this.events.off(Phaser.Scenes.Events.ADDED_TO_SCENE, toMap);
+    });
     this.battle = new Battle(this.level);
     this.recorder = new ReplayRecorder(this.battle);
     const save = loadSave();
@@ -183,7 +210,8 @@ export class BattleScene extends Phaser.Scene {
     this.drawMap();
     this.pan = null;
     const cam = this.cameras.main;
-    const [sx, sy] = this.clampScroll((this.battle.grid.width * TILE - GAME_W) / 2, (this.battle.grid.height * TILE - (PANEL_Y + VIEW_TOP)) / 2);
+    const z = this.mapZoom;
+    const [sx, sy] = this.clampScroll((this.battle.grid.width * TILE - GAME_W / z) / 2, (this.battle.grid.height * TILE - (PANEL_Y + VIEW_TOP) / z) / 2);
     cam.setScroll(sx, sy);
 
     this.overlayGfx = this.add.graphics().setDepth(5);
@@ -206,12 +234,29 @@ export class BattleScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (over.length === 0) this.onDown(logical(p));
     });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(logical(p)));
-    this.input.on('wheel', (_p: Phaser.Input.Pointer, _o: unknown, dx: number, dy: number) => {
-      const [x, y] = this.clampScroll(this.cameras.main.scrollX + dx * 0.5, this.cameras.main.scrollY + dy * 0.5);
-      this.cameras.main.setScroll(x, y);
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (this.updatePinch()) return;
+      this.onMove(logical(p));
+    });
+    this.input.on('wheel', (p: Phaser.Input.Pointer, _o: unknown, dx: number, dy: number, _dz: number, e?: WheelEvent) => {
+      const ev = (p.event as WheelEvent | undefined) ?? e;
+      if (ev?.ctrlKey) {
+        // Ctrl + wheel (or a touchpad pinch) zooms around the cursor.
+        this.zoomAround(this.mapZoom * (dy > 0 ? 0.9 : 1.1), p.x / ZOOM, p.y / ZOOM);
+        ev.preventDefault?.();
+        return;
+      }
+      const cam = this.cameras.main;
+      const [x, y] = this.clampScroll(cam.scrollX + (dx * 0.5) / this.mapZoom, cam.scrollY + (dy * 0.5) / this.mapZoom);
+      cam.setScroll(x, y);
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      if (this.pinch) {
+        // Lifting a finger ends the pinch; the other finger must not turn into a tap or a pan.
+        this.pinch = null;
+        this.pan = null;
+        return;
+      }
       if (over.length === 0 || this.pan || this.state.kind === 'direction' || this.state.kind === 'drag') this.onUp(logical(p));
     });
   }
@@ -277,6 +322,30 @@ export class BattleScene extends Phaser.Scene {
     return this.battle.grid.inBounds(x, y) ? [x, y] : null;
   }
 
+  /**
+   * Deploy target for a pointer: the valid tile whose top is nearest, within about one tile,
+   * so a slightly-off finger still lands where the player meant (magnetic placement).
+   */
+  private deployTarget(p: Pt, op: string): [number, number] | null {
+    const w = this.toWorld(p.x, p.y + (p.touch ? TOUCH_AIM_Y : 0));
+    const gx = Math.floor(w.x / TILE);
+    const gy = Math.floor(w.y / TILE);
+    let best: [number, number] | null = null;
+    let bestD = TILE * 0.95;
+    for (let y = gy - 2; y <= gy + 2; y++) {
+      for (let x = gx - 2; x <= gx + 2; x++) {
+        if (!this.battle.grid.inBounds(x, y) || !this.battle.canDeployAt(op, x, y)) continue;
+        const [cx, cy] = this.tileCenter(x, y);
+        const d = Math.hypot(cx - w.x, cy - w.y);
+        if (d < bestD) {
+          bestD = d;
+          best = [x, y];
+        }
+      }
+    }
+    return best;
+  }
+
   /** World point under a logical screen position. */
   private toWorld(screenX: number, screenY: number): Phaser.Math.Vector2 {
     return this.cameras.main.getWorldPoint(screenX * ZOOM, screenY * ZOOM);
@@ -292,15 +361,48 @@ export class BattleScene extends Phaser.Scene {
     return obj;
   }
 
-  /** Keeps the map inside the view: centred when it fits, scrollable when it does not. */
+  /** Keeps the map inside the view: centred when it fits, scrollable when it does not (all in world units). */
   private clampScroll(sx: number, sy: number): [number, number] {
+    const z = this.mapZoom;
     const mapW = this.battle.grid.width * TILE;
     const mapH = this.battle.grid.height * TILE;
-    const viewW = VIEW_RIGHT - VIEW_LEFT;
-    const viewH = PANEL_Y - 4 - VIEW_TOP;
-    const x = mapW <= viewW ? -Math.floor((GAME_W - mapW) / 2) : Phaser.Math.Clamp(sx, -VIEW_LEFT, mapW - VIEW_RIGHT);
-    const y = mapH <= viewH ? -VIEW_TOP : Phaser.Math.Clamp(sy, -VIEW_TOP, mapH - (PANEL_Y - 4));
-    return [Math.round(x), Math.round(y)];
+    const viewW = (VIEW_RIGHT - VIEW_LEFT) / z;
+    const viewH = (PANEL_Y - 4 - VIEW_TOP) / z;
+    const x = mapW <= viewW ? -(GAME_W / z - mapW) / 2 : Phaser.Math.Clamp(sx, -VIEW_LEFT / z, mapW - VIEW_RIGHT / z);
+    const y = mapH <= viewH ? -VIEW_TOP / z : Phaser.Math.Clamp(sy, -VIEW_TOP / z, mapH - (PANEL_Y - 4) / z);
+    const step = 1 / (ZOOM * z);
+    return [Math.round(x / step) * step, Math.round(y / step) * step];
+  }
+
+  /** Sets the map zoom keeping the world point under (screenX, screenY) where it is. */
+  private zoomAround(zoom: number, screenX: number, screenY: number, anchor?: { x: number; y: number }): void {
+    const z = Phaser.Math.Clamp(zoom, MAP_ZOOM_MIN, MAP_ZOOM_MAX);
+    const a = anchor ?? this.toWorld(screenX, screenY);
+    this.mapZoom = z;
+    const cam = this.cameras.main.setZoom(ZOOM * z);
+    const [x, y] = this.clampScroll(a.x - screenX / z, a.y - screenY / z);
+    cam.setScroll(x, y);
+    writeSave((s) => (s.mapZoom = Math.round(z * 100) / 100));
+  }
+
+  /** Two fingers on the map zoom it. Returns true while a pinch is in progress. */
+  private updatePinch(): boolean {
+    const a = this.input.pointer1;
+    const b = this.input.pointer2;
+    if (!a?.isDown || !b?.isDown || this.state.kind === 'drag' || this.state.kind === 'direction') {
+      if (this.pinch && !(a?.isDown && b?.isDown)) this.pinch = null;
+      return !!this.pinch;
+    }
+    const dist = Math.max(10, Math.hypot(a.x - b.x, a.y - b.y));
+    const mx = (a.x + b.x) / 2 / ZOOM;
+    const my = (a.y + b.y) / 2 / ZOOM;
+    if (!this.pinch) {
+      const w = this.toWorld(mx, my);
+      this.pinch = { dist, zoom: this.mapZoom, anchorX: w.x, anchorY: w.y };
+      this.pan = null;
+    }
+    this.zoomAround(this.pinch.zoom * (dist / this.pinch.dist), mx, my, { x: this.pinch.anchorX, y: this.pinch.anchorY });
+    return true;
   }
 
   /** While dragging a card near the screen edge, scroll the map so far tiles can be reached. */
@@ -316,7 +418,7 @@ export class BattleScene extends Phaser.Scene {
     else if (p.y > PANEL_Y - margin && p.y < DECK_Y) dy = 6;
     if (!dx && !dy) return;
     const cam = this.cameras.main;
-    const [x, y] = this.clampScroll(cam.scrollX + dx, cam.scrollY + dy);
+    const [x, y] = this.clampScroll(cam.scrollX + dx / this.mapZoom, cam.scrollY + dy / this.mapZoom);
     cam.setScroll(x, y);
     this.onMove(p);
   }
@@ -376,11 +478,12 @@ export class BattleScene extends Phaser.Scene {
   /** A tap on the map (not a pan): deploy target, operator or enemy selection. */
   private onMapTap(p: Pt): void {
     const s = this.state;
-    const tile = this.tileAt(p.x, p.y);
-    if (tile && s.kind === 'card' && !this.locked && this.battle.canDeployAt(s.op, tile[0], tile[1])) {
-      this.enterDirection(s.op, tile[0], tile[1]);
+    const target = s.kind === 'card' && !this.locked ? this.deployTarget(p, s.op) : null;
+    if (s.kind === 'card' && target) {
+      this.enterDirection(s.op, target[0], target[1]);
       return;
     }
+    const tile = this.tileAt(p.x, p.y);
     const op = tile ? this.battle.operatorAt(tile[0], tile[1]) : undefined;
     if (op) {
       this.state = { kind: 'selected', op: op.def.id };
@@ -401,7 +504,8 @@ export class BattleScene extends Phaser.Scene {
     if (this.pan && p.isDown) {
       if (!this.pan.moved && Math.hypot(p.x - this.pan.x, p.y - this.pan.y) > 6) this.pan.moved = true;
       if (this.pan.moved) {
-        const [x, y] = this.clampScroll(this.pan.scrollX - (p.x - this.pan.x), this.pan.scrollY - (p.y - this.pan.y));
+        const z = this.mapZoom;
+        const [x, y] = this.clampScroll(this.pan.scrollX - (p.x - this.pan.x) / z, this.pan.scrollY - (p.y - this.pan.y) / z);
         this.cameras.main.setScroll(x, y);
       }
       return;
@@ -409,9 +513,10 @@ export class BattleScene extends Phaser.Scene {
     if (s.kind === 'drag') {
       if (!s.moved && Math.hypot(p.x - s.startX, p.y - s.startY) > 6) s.moved = true;
       if (s.moved && !this.locked && this.battle.canDeployOperator(s.op)) {
-        const tile = this.tileAt(p.x, p.y);
+        const tile = this.deployTarget(p, s.op);
+        this.dragTarget = tile;
         this.placeUnit(this.ghost, `op_${s.op}`).setVisible(true);
-        if (tile && this.battle.canDeployAt(s.op, tile[0], tile[1])) {
+        if (tile) {
           const [cx, cy] = this.tileCenter(tile[0], tile[1]);
           this.ghost.setPosition(cx, cy + FEET);
         } else {
@@ -440,8 +545,9 @@ export class BattleScene extends Phaser.Scene {
         this.state = { kind: 'card', op: s.op };
         return;
       }
-      const tile = this.tileAt(p.x, p.y);
-      if (tile && !this.locked && this.battle.canDeployAt(s.op, tile[0], tile[1])) this.enterDirection(s.op, tile[0], tile[1]);
+      const tile = this.locked ? null : this.deployTarget(p, s.op);
+      this.dragTarget = null;
+      if (tile) this.enterDirection(s.op, tile[0], tile[1]);
       else this.state = { kind: 'idle' };
       return;
     }
@@ -546,8 +652,8 @@ export class BattleScene extends Phaser.Scene {
     const top = VIEW_TOP + 4;
     const bottom = PANEL_Y - 8;
     for (const v of this.enemyViews.values()) {
-      const sx = v.sprite.x - cam.scrollX;
-      const sy = v.sprite.y - ((v.sprite.getData('h') as number) ?? 24) / 2 - cam.scrollY;
+      const sx = (v.sprite.x - cam.scrollX) * this.mapZoom;
+      const sy = (v.sprite.y - ((v.sprite.getData('h') as number) ?? 24) / 2 - cam.scrollY) * this.mapZoom;
       if (sx >= 0 && sx <= GAME_W && sy >= top && sy <= bottom) continue;
       const x = Phaser.Math.Clamp(sx, 6, GAME_W - 6);
       const y = Phaser.Math.Clamp(sy, top, bottom);
@@ -990,6 +1096,14 @@ export class BattleScene extends Phaser.Scene {
           g.lineStyle(1, COLORS.redLight, 0.9).strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
         }
       }
+      // The tile the operator will land on if released now.
+      const tgt = s.kind === 'drag' ? this.dragTarget : null;
+      if (tgt) {
+        const px = tgt[0] * TILE;
+        const py = tgt[1] * TILE - this.lift(tgt[0], tgt[1]);
+        g.fillStyle(0xffffff, 0.25).fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+        g.lineStyle(2, 0xffffff, 1).strokeRect(px + 1, py + 1, TILE - 2, TILE - 2);
+      }
     }
 
     if (s.kind === 'direction') {
@@ -1183,5 +1297,14 @@ function playAnim(s: Phaser.GameObjects.Sprite, texture: string, anim: string): 
 function ui<T extends Phaser.GameObjects.GameObject>(o: T): T {
   if (o instanceof Phaser.GameObjects.Container) o.setScrollFactor(0, 0, true);
   else (o as unknown as Phaser.GameObjects.Components.ScrollFactor).setScrollFactor(0);
+  // Drawn only by the fixed HUD camera, so map zoom never scales the interface.
+  const cams = o.scene.cameras;
+  const hud = cams.getCamera('ui');
+  const show = (obj: Phaser.GameObjects.GameObject) => {
+    if (hud) obj.cameraFilter &= ~hud.id;
+    obj.cameraFilter |= cams.main.id;
+    if (obj instanceof Phaser.GameObjects.Container) obj.list.forEach(show);
+  };
+  show(o);
   return o;
 }
