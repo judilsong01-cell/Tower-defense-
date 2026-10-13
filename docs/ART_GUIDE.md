@@ -31,7 +31,7 @@ do browser. Assim podes ir substituindo aos poucos.
 
 ## Lista completa
 
-**Por fazer: 14 imagens + ícone da app + splash** (as 20 personagens e os 30 mapas já estão feitos em 3D). Marca `[x]` à medida que fores fazendo.
+**Por fazer: 14 imagens** (as 20 personagens e os 30 mapas já estão feitos em 3D; o logótipo, o ícone da app e o splash da marca **MUXIMA** também). Marca `[x]` à medida que fores fazendo.
 
 ### 1 e 2. Operadores e inimigos: **já feitos (3D)**
 
@@ -131,17 +131,17 @@ ou o placeholder colorido desse bioma.
 
 | ✓ | Ficheiro | Tamanho | Notas |
 | --- | --- | --- | --- |
-| [ ] | `assets/icon.png` (na raiz do projeto) | 1024×1024 | Ícone da app; deixa uma margem, porque o Android corta-o em círculo |
-| [ ] | `assets/splash.png` (na raiz do projeto) | 2732×2732 | Ecrã de arranque, com o conteúdo importante no centro |
+| [x] | `assets/icon.png` (na raiz do projeto) | 1024×1024 | Ícone da app (coração MUXIMA) |
+| [x] | `assets/splash.png` (na raiz do projeto) | 2732×2732 | Ecrã de arranque |
 
-Depois gera todos os tamanhos com `npx @capacitor/assets generate --android`.
+Já feitos a partir de `tools/brand/brand.html`: `node tools/brand/render.mjs` gera o logótipo
+(`public/assets/ui/logo.png`), os ícones e os splash do Android em todos os tamanhos.
 
 ### Ordem sugerida
 
 Para veres diferença mais depressa:
 
 1. Ícones e efeitos.
-2. Ícone da app e splash.
 
 ---
 

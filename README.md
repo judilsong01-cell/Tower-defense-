@@ -1,4 +1,4 @@
-# Tower Defense (nome provisório)
+# Muxima
 
 Tower defense em pixel art inspirado nas mecânicas do Arknights, num mundo distópico ao estilo
 *Equilibrium*: em Concórdia sentir é crime, e tu comandas a Resistência contra as forças do regime.

@@ -21,6 +21,7 @@ export class HomeScene extends Phaser.Scene {
 
   preload(): void {
     if (!this.textures.exists('home_bg')) this.load.image('home_bg', 'assets/maps/l21.jpg');
+    if (!this.textures.exists('ui_logo')) this.load.image('ui_logo', 'assets/ui/logo.png');
   }
 
   create(): void {
@@ -42,9 +43,15 @@ export class HomeScene extends Phaser.Scene {
 
     // Title.
     const g = this.add.graphics();
-    g.fillStyle(COLORS.red, 1).fillRect(16, 16, 4, 34);
-    text(this, 28, 16, t('game.title'), { size: 16 });
-    text(this, 28, 40, t('game.subtitle'), { color: CSS.dim });
+    if (this.textures.exists('ui_logo')) {
+      this.textures.get('ui_logo').setFilter(Phaser.Textures.FilterMode.LINEAR);
+      this.add.image(14, 10, 'ui_logo').setOrigin(0, 0).setScale(48 / 300);
+      text(this, 18, 62, t('game.subtitle'), { color: CSS.dim });
+    } else {
+      g.fillStyle(COLORS.red, 1).fillRect(16, 16, 4, 34);
+      text(this, 28, 16, t('game.title'), { size: 16 });
+      text(this, 28, 40, t('game.subtitle'), { color: CSS.dim });
+    }
 
     // Featured operator (tap to cycle through the squad), like an assistant on the home screen.
     const heroX = Math.round(GAME_W * 0.27);
@@ -52,7 +59,7 @@ export class HomeScene extends Phaser.Scene {
     this.hero = this.add.sprite(heroX, 322, `op_${squad[0]}`, 0);
     this.heroName = text(this, heroX, 330, '', { size: 8, align: 'center' });
     this.heroClass = text(this, heroX, 344, '', { color: CSS.dim, align: 'center' });
-    text(this, heroX, 70, t('home.tapHint'), { color: CSS.dim, align: 'center' }).setAlpha(0.7);
+    text(this, heroX, 80, t('home.tapHint'), { color: CSS.dim, align: 'center' }).setAlpha(0.7);
     tapZone(this, heroX - 90, 80, 180, 250, () => this.feature(squad, this.featured + 1));
     this.feature(squad, 0);
 

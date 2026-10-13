@@ -1,7 +1,7 @@
 import type { StringKey } from './pt';
 
 export const en: Record<StringKey, string> = {
-  'game.title': 'TOWER DEFENSE',
+  'game.title': 'MUXIMA',
   'game.subtitle': 'In Concord, feeling is a crime.',
   'menu.play': 'PLAY',
   'menu.language': 'LANGUAGE: EN',

@@ -65,7 +65,7 @@ Escolhe **uma** das formas.
    ativa **Permitir desta fonte** e volta atrás.
 4. Carrega em **Instalar**. Se o *Play Protect* avisar, carrega em **Mais detalhes → Instalar mesmo assim**
    (aparece porque o APK não vem da Play Store).
-5. Abre **Tower Defense**. O jogo abre deitado (horizontal) e em ecrã inteiro.
+5. Abre **Muxima** (ícone do coração vermelho). O jogo abre deitado (horizontal) e em ecrã inteiro.
 
 ### Forma B: com cabo USB (instala e abre sozinho)
 

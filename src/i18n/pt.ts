@@ -1,5 +1,5 @@
 export const pt = {
-  'game.title': 'TOWER DEFENSE',
+  'game.title': 'MUXIMA',
   'game.subtitle': 'Em Concórdia, sentir é crime.',
   'menu.play': 'JOGAR',
   'menu.language': 'IDIOMA: PT',

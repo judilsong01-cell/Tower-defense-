@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+/* Bebas Neue: SIL Open Font License (Google Fonts). */
+@font-face { font-family: Bebas; src: url(fonts/BebasNeue.woff2); }
+html, body { margin: 0; background: transparent; }
+svg { display: block; }
+</style></head><body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- MUXIMA mark: a heart drawn like a Chokwe "sona" (a continuous line woven around dots). -->
+    <g id="heart">
+      <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M0,46 C-30,22 -60,2 -60,-22 C-60,-44 -40,-56 -22,-50 C-10,-46 -4,-36 0,-28 C4,-36 10,-46 22,-50 C40,-56 60,-44 60,-22 C60,2 30,22 0,46 Z" stroke="#0b0a0e" stroke-width="13"/>
+        <path d="M0,46 C-30,22 -60,2 -60,-22 C-60,-44 -40,-56 -22,-50 C-10,-46 -4,-36 0,-28 C4,-36 10,-46 22,-50 C40,-56 60,-44 60,-22 C60,2 30,22 0,46 Z" stroke="#c8323a" stroke-width="8"/>
+        <path d="M-52,-30 C-48,-44 -34,-50 -22,-46" stroke="#ff8a8f" stroke-width="2.5" opacity=".9"/>
+        <path d="M0,30 C-18,14 -40,0 -40,-18 C-40,-32 -26,-38 -16,-32 C-8,-28 -4,-20 0,-12 C4,-20 8,-28 16,-32 C26,-38 40,-32 40,-18 C40,0 18,14 0,30 Z" stroke="#c8323a" stroke-width="5.5"/>
+        <path d="M-40,-18 C-30,-10 -30,4 -20,6 M40,-18 C30,-10 30,4 20,6 M-16,-32 C-10,-20 10,-20 16,-32 M-20,6 C-10,10 10,10 20,6" stroke="#ff7a7f" stroke-width="3.2"/>
+      </g>
+      <g fill="#f2f3f5" stroke="#0b0a0e" stroke-width="1.5"><circle cx="-30" cy="-24" r="4.5"/><circle cx="30" cy="-24" r="4.5"/><circle cx="0" cy="-4" r="4.5"/><circle cx="-18" cy="8" r="4.5"/><circle cx="18" cy="8" r="4.5"/><circle cx="0" cy="22" r="4.5"/></g>
+    </g>
+    <radialGradient id="glow" cx="50%" cy="46%" r="60%"><stop offset="0" stop-color="#3a1418"/><stop offset=".55" stop-color="#1a1216"/><stop offset="1" stop-color="#0e0f12"/></radialGradient>
+  </defs>
+</svg>
+<div id="stage"></div>
+<script>
+const q = new URLSearchParams(location.search);
+const view = q.get('view');
+const W = +q.get('w'), H = +(q.get('h') || W);
+const ns = 'http://www.w3.org/2000/svg';
+const wordmark = (x, y, size, tagline) => `
+  <text x="${x}" y="${y}" text-anchor="middle" font-family="Bebas" font-size="${size}" letter-spacing="${size * 0.06}" fill="#eceef1">MUXIMA</text>
+  ${tagline ? `<text x="${x}" y="${y + size * 0.36}" text-anchor="middle" font-family="Inter" font-weight="600" font-size="${size * 0.13}" letter-spacing="${size * 0.04}" fill="#9aa0ab">EM CONCÓRDIA, SENTIR É CRIME.</text>` : ''}`;
+let body = '';
+if (view === 'icon') body = `<rect width="${W}" height="${H}" fill="url(#glow)"/><g transform="translate(${W / 2},${H * 0.52}) scale(${W / 170})"><use href="#heart"/></g>`;
+if (view === 'round') body = `<circle cx="${W / 2}" cy="${H / 2}" r="${W / 2}" fill="url(#glow)"/><g transform="translate(${W / 2},${H * 0.52}) scale(${W / 185})"><use href="#heart"/></g>`;
+// Adaptive icon foreground: 108dp canvas, keep the mark inside the 66dp safe circle.
+if (view === 'fg') body = `<g transform="translate(${W / 2},${H * 0.515}) scale(${W / 250})"><use href="#heart"/></g>`;
+if (view === 'splash') {
+  const s = Math.min(W, H);
+  body = `<rect width="${W}" height="${H}" fill="url(#glow)"/>
+    <g transform="translate(${W / 2},${H / 2 - s * 0.11}) scale(${s / 420})"><use href="#heart"/></g>
+    ${wordmark(W / 2, H / 2 + s * 0.14, s * 0.16, true)}`;
+}
+if (view === 'logo') body = `<g transform="translate(${H * 0.52},${H * 0.5}) scale(${H / 135})"><use href="#heart"/></g>
+  <text x="${H * 1.04}" y="${H * 0.78}" font-family="Bebas" font-size="${H * 0.86}" letter-spacing="${H * 0.05}" fill="#eceef1">MUXIMA</text>`;
+document.getElementById('stage').innerHTML = `<svg xmlns="${ns}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${document.querySelector('defs').outerHTML}${body}</svg>`;
+document.fonts.ready.then(() => (window.done = true));
+</script>
+</body></html>
