@@ -87,8 +87,8 @@ describe('battle rules', () => {
     const b = new Battle(LEVEL_1);
     b.queue({ type: 'deploy', op: 'brasa', x: 2, y: 1, dir: 'left' });
     b.step();
-    expect(b.dp).toBeLessThan(1);
-    for (let i = 0; i < TICK_RATE * 6; i++) b.step();
+    expect(b.dp).toBeLessThan(LEVEL_1.startDp - 10 + 1);
+    for (let i = 0; i < TICK_RATE * (LEVEL_1.waves[0].time + 3); i++) b.step();
     expect(b.enemies.some((e) => e.blockedBy !== null)).toBe(true);
     const dpBefore = b.dp;
     b.queue({ type: 'retreat', op: 'brasa' });

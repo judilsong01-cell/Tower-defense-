@@ -10,7 +10,10 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
 - **Menus ao estilo Arknights**: ecrã inicial limpo (líder da equipa em 3D, COMBATE e EQUIPA), seleção de operações
   com pré-visualização do mapa 3D e ecrã de **equipa** com os modelos 3D animados, estatísticas, alcance e skill.
 - **Equipa à escolha**: escolhes até 8 operadores; a equipa vale para todos os estágios (deck, IA e replays).
-- **Progressão**: cada estágio só abre depois de fazeres **3 estrelas** no anterior.
+- **Progressão**: cada estágio só abre depois de fazeres **3 estrelas** no anterior. Todos os 30 estágios estão
+  **verificados**: o `npm run solve` procura no simulador uma colocação que vença sem perder vidas e guarda-a em
+  `src/data/solutions.ts` (a IA usa-a; os testes falham se algum estágio deixar de dar 3 estrelas).
+  `npm run balance` mostra o resultado da IA em cada estágio.
 - **Colocação fácil no celular**: o mapa abre ampliado (casas de ~9 mm), **belisca para aproximar/afastar**
   (no PC: Ctrl + roda do rato) e a colocação é magnética: largas perto de uma casa válida e o operador vai para ela.
 - **Ecrã inteiro no celular**: a largura do jogo adapta-se ao formato do ecrã (16:9 até 2.4:1, ex. 20:9 no A21s).

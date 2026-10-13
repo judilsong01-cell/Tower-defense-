@@ -3,6 +3,7 @@
 // map geometry, then deploys/redeploys following that plan as DP allows.
 
 import { ENEMIES } from '../data/enemies';
+import { SOLUTIONS } from '../data/solutions';
 import type { Dir, OperatorDef, Point } from '../data/types';
 import { DIRS } from '../data/types';
 import type { Battle } from './battle';
@@ -198,12 +199,22 @@ export function planAutoDeploy(battle: Battle): PlannedDeploy[] {
   return plan.sort((a, b) => prio.get(a.op)! - prio.get(b.op)!);
 }
 
+/**
+ * The deployment plan for a battle: the stage's verified 3-star solution when the squad has every
+ * operator it uses (see scripts/solve-stages.ts), otherwise the geometric heuristic above.
+ */
+export function chooseAutoPlan(battle: Battle): PlannedDeploy[] {
+  const solution = SOLUTIONS[battle.level.id];
+  if (solution && solution.every((p) => battle.rosterEntry(p.op))) return solution.map((p) => ({ ...p }));
+  return planAutoDeploy(battle);
+}
+
 export class AutoDeployer {
   readonly plan: PlannedDeploy[];
   private started = false;
 
-  constructor(battle: Battle) {
-    this.plan = planAutoDeploy(battle);
+  constructor(battle: Battle, plan?: PlannedDeploy[]) {
+    this.plan = plan ?? chooseAutoPlan(battle);
   }
 
   /** Call before every battle.step(). */

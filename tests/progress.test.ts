@@ -26,8 +26,9 @@ describe('player squad', () => {
     expect(DEFAULT_SQUAD.length).toBeLessThanOrEqual(SQUAD_MAX);
   });
 
-  // The default squad is what a new player takes everywhere, so the AI must clear every stage with it.
-  it.each(LEVELS.map((l) => [l.id, l] as const))('the AI clears %s with the default squad', (_id, level) => {
+  // Stages unlock with 3 stars, so each one must be clearable without losing a life: the AI
+  // (following the stored solution, see scripts/solve-stages.ts) proves it with the default squad.
+  it.each(LEVELS.map((l) => [l.id, l] as const))('the AI clears %s with 3 stars using the default squad', (_id, level) => {
     const b = new Battle(withSquad(level, DEFAULT_SQUAD));
     const ai = new AutoDeployer(b);
     while (b.result === 'running' && b.tick < TICK_RATE * 600) {
@@ -35,5 +36,6 @@ describe('player squad', () => {
       b.step();
     }
     expect(b.result).toBe('won');
+    expect(b.stars()).toBe(3);
   });
 });
