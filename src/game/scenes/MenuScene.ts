@@ -9,6 +9,7 @@ import { dataVersion } from '../../sim/replay';
 import { unitMeta } from '../art';
 import { isUnlocked, playerSquad, previousLevel, totalStars, withSquad } from '../progress';
 import { loadSave, session } from '../save';
+import { audio } from '../audio';
 import { Button, lockIcon, panel, tapZone, text } from '../ui/widgets';
 import type { BattleMode } from './BattleScene';
 
@@ -40,6 +41,7 @@ export class MenuScene extends Phaser.Scene {
     this.preview = null;
     this.leftW = Math.round(GAME_W * 0.47);
     const save = loadSave();
+    audio.music('menu');
 
     // Top bar.
     const g = this.add.graphics();

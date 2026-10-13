@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { detectLang, setLang } from '../../i18n';
 import { ZOOM } from '../../config';
 import { createManifestAnims, createPlaceholderTextures, dropMissingArt, MANIFEST_KEY, queueManifest, type Manifest } from '../art';
+import { audio } from '../audio';
 import { loadSave } from '../save';
 
 export class BootScene extends Phaser.Scene {
@@ -17,6 +18,8 @@ export class BootScene extends Phaser.Scene {
     this.cameras.main.setOrigin(0, 0).setZoom(ZOOM);
     const save = loadSave();
     setLang(save.lang ?? detectLang());
+    audio.setSfx(save.sfx ?? true);
+    audio.setMusicOn(save.music ?? true);
 
     const manifest = this.cache.json.get(MANIFEST_KEY) as Manifest | undefined;
     queueManifest(this, manifest);

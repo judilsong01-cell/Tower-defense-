@@ -6,7 +6,8 @@ import { getLang, LANGS, setLang, t, type StringKey } from '../../i18n';
 import { loadPortrait, PORTRAIT, unitMeta } from '../art';
 import { isUnlocked, playerSquad, totalStars } from '../progress';
 import { loadSave, session, writeSave } from '../save';
-import { Button, slantPanel, tapZone, text } from '../ui/widgets';
+import { audio } from '../audio';
+import { Button, slantPanel, soundButtons, tapZone, text } from '../ui/widgets';
 
 /** Main menu: a clean title screen with the squad leader in 3D and two big entries. */
 export class HomeScene extends Phaser.Scene {
@@ -28,6 +29,7 @@ export class HomeScene extends Phaser.Scene {
     this.cameras.main.setOrigin(0, 0).setZoom(ZOOM).setBackgroundColor(COLORS.bg);
     const save = loadSave();
     const squad = playerSquad(save.squad);
+    audio.music('menu');
 
     // Background: a slowly drifting 3D map, darkened, with a light band behind the menu.
     if (this.textures.exists('home_bg')) {
@@ -80,6 +82,7 @@ export class HomeScene extends Phaser.Scene {
     // Progress and language.
     this.add.image(mx + 8, 268, 'ui_star').setScale(2).setOrigin(0, 0.5);
     text(this, mx + 30, 264, `${totalStars(save.levels)}/${LEVELS.length * 3}`, { color: CSS.gold });
+    soundButtons(this, GAME_W - 268, GAME_H - 30, 130, soundLabels(), saveSound);
     new Button(this, GAME_W - 132, GAME_H - 30, 120, 20, t('menu.language'), () => {
       const lang = LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length];
       setLang(lang);
@@ -124,4 +127,17 @@ export class HomeScene extends Phaser.Scene {
     zone.on('pointerup', () => draw(false));
     zone.on('pointerout', () => draw(false));
   }
+}
+
+/** Labels for the sound / music switches. */
+export function soundLabels(): { sfx: (on: boolean) => string; music: (on: boolean) => string } {
+  const v = (on: boolean) => t(on ? 'set.on' : 'set.off');
+  return { sfx: (on) => t('set.sound', { v: v(on) }), music: (on) => t('set.music', { v: v(on) }) };
+}
+
+export function saveSound(sfx: boolean, music: boolean): void {
+  writeSave((s) => {
+    s.sfx = sfx;
+    s.music = music;
+  });
 }

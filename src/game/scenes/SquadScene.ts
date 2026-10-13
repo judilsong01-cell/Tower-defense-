@@ -8,6 +8,7 @@ import { t, type StringKey } from '../../i18n';
 import { loadPortrait, PORTRAIT, unitMeta } from '../art';
 import { playerSquad, SQUAD_MAX } from '../progress';
 import { loadSave, writeSave } from '../save';
+import { audio } from '../audio';
 import { Button, panel, tapZone, text } from '../ui/widgets';
 
 export interface SquadSceneData {
@@ -46,6 +47,7 @@ export class SquadScene extends Phaser.Scene {
     this.cards = [];
     this.detail = [];
     this.leftW = Math.round(GAME_W * 0.52);
+    audio.music('menu');
     const squad = playerSquad(loadSave().squad);
     this.selected = squad[0];
 

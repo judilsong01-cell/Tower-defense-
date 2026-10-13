@@ -15,6 +15,11 @@ export interface SaveData {
   autoSkill: boolean;
   /** Last map zoom chosen in battle (pinch / ctrl+wheel). */
   mapZoom?: number;
+  /** Sound effects / music switches (default on). */
+  sfx?: boolean;
+  music?: boolean;
+  /** The first-stage tutorial was completed or skipped. */
+  tutorialDone?: boolean;
   levels: Record<string, LevelProgress>;
   /** Operator ids chosen in the squad screen, in deck order. Missing: the default squad. */
   squad?: string[];

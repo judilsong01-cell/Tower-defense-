@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, CSS, FONT, ZOOM } from '../../config';
+import { audio } from '../audio';
 
 export function text(
   scene: Phaser.Scene,
@@ -66,6 +67,7 @@ export class Button extends Phaser.GameObjects.Container {
       if (!this.enabled || !this.pressed) return;
       this.pressed = false;
       this.redraw();
+      audio.play('click');
       onClick();
     });
     this.redraw();
@@ -121,7 +123,10 @@ export function tapZone(scene: Phaser.Scene, x: number, y: number, w: number, h:
   zone.on('pointerdown', () => (down = true));
   zone.on('pointerout', () => (down = false));
   zone.on('pointerup', () => {
-    if (down) onTap();
+    if (down) {
+      audio.play('click');
+      onTap();
+    }
     down = false;
   });
   return zone;
@@ -140,4 +145,20 @@ export function lockIcon(g: Phaser.GameObjects.Graphics, x: number, y: number, c
   g.lineStyle(2, color, 1).beginPath().arc(x, y - 3, 4, Math.PI, 0).strokePath();
   g.fillStyle(color, 1).fillRect(x - 6, y - 2, 12, 9);
   g.fillStyle(COLORS.bg, 1).fillRect(x - 1, y + 1, 2, 3);
+}
+
+/** Sound and music switches (saved), as two small buttons side by side. */
+export function soundButtons(scene: Phaser.Scene, x: number, y: number, w: number, labels: { sfx: (on: boolean) => string; music: (on: boolean) => string }, save: (sfx: boolean, music: boolean) => void): Button[] {
+  const half = Math.floor((w - 6) / 2);
+  const sfxBtn: Button = new Button(scene, x, y, half, 20, labels.sfx(audio.sfxOn), () => {
+    audio.setSfx(!audio.sfxOn);
+    sfxBtn.setLabel(labels.sfx(audio.sfxOn));
+    save(audio.sfxOn, audio.musicOn);
+  });
+  const musicBtn: Button = new Button(scene, x + half + 6, y, w - half - 6, 20, labels.music(audio.musicOn), () => {
+    audio.setMusicOn(!audio.musicOn);
+    musicBtn.setLabel(labels.music(audio.musicOn));
+    save(audio.sfxOn, audio.musicOn);
+  });
+  return [sfxBtn, musicBtn];
 }

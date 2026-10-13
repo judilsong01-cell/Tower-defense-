@@ -8,9 +8,11 @@ import { AutoDeployer } from '../../sim/ai';
 import { Battle, DT, type BattleEvent, type EnemyUnit, type OperatorUnit } from '../../sim/battle';
 import { rangeTiles, type TileKind } from '../../sim/grid';
 import { dataVersion, ReplayPlayer, ReplayRecorder } from '../../sim/replay';
+import { audio } from '../audio';
 import { isUnlocked, playerSquad, withSquad } from '../progress';
 import { loadSave, session, writeSave } from '../save';
-import { Button, panel, text } from '../ui/widgets';
+import { Button, panel, soundButtons, text } from '../ui/widgets';
+import { saveSound, soundLabels } from './HomeScene';
 import { tileTextureKey, unitMeta } from '../art';
 
 export type BattleMode = 'manual' | 'replay' | 'ai';
@@ -123,6 +125,9 @@ export class BattleScene extends Phaser.Scene {
   private mapZoom = 1;
   private uiCam!: Phaser.Cameras.Scene2D.Camera;
   private pinch: { dist: number; zoom: number; anchorX: number; anchorY: number } | null = null;
+  /** First-stage tutorial step (-1 = off), see updateTutorial(). */
+  private tutorial = -1;
+  private tutObjs: Phaser.GameObjects.GameObject[] = [];
   /** Tile the dragged operator would land on (highlighted). */
   private dragTarget: [number, number] | null = null;
   private barsGfx!: Phaser.GameObjects.Graphics;
@@ -230,6 +235,10 @@ export class BattleScene extends Phaser.Scene {
       this.createPanel();
       this.createDeck();
     });
+    audio.music('battle');
+    this.tutorial = this.level.id === LEVELS[0].id && this.mode === 'manual' && !save.tutorialDone ? 0 : -1;
+    this.tutObjs = [];
+    if (this.tutorial === 0) this.showTutorial();
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (over.length === 0) this.onDown(logical(p));
@@ -271,7 +280,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (!this.menuPaused && !this.placing && this.battle.result === 'running') {
+    // The tutorial holds the battle until the first deployment (queued actions still go through).
+    const tutorialHold = this.tutorial >= 0 && this.tutorial < 2 && !this.battle.hasPending;
+    if (!this.menuPaused && !this.placing && !tutorialHold && this.battle.result === 'running') {
       this.acc += (Math.min(delta, 100) / 1000) * SPEEDS[this.speedIndex];
       while (this.acc >= DT && this.battle.result === 'running') {
         this.acc -= DT;
@@ -286,6 +297,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.anims.globalTimeScale = this.menuPaused ? 0 : this.placing ? 0.25 : SPEEDS[this.speedIndex];
     this.autoScroll();
+    this.updateTutorial();
     this.syncUnits();
     this.drawOverlay();
     this.drawEdgeMarkers();
@@ -934,6 +946,7 @@ export class BattleScene extends Phaser.Scene {
           const s = this.opViews.get(ev.uid);
           if (!op || !target || !s) break;
           playAnim(s, `op_${op.def.id}`, 'attack');
+          audio.play(op.def.splash > 0 ? 'blast' : op.def.placement === 'high' ? 'shot' : op.def.tags.includes('impact') ? 'impact' : 'blade', 0.8);
           if (op.def.placement === 'ground') {
             this.slash(target.x, target.y - 14);
             this.lunge(s, target.x - s.x, target.y - s.y);
@@ -947,6 +960,7 @@ export class BattleScene extends Phaser.Scene {
         case 'heal': {
           const t = this.opViews.get(ev.target);
           if (t) this.healFx(t.x, t.y - 16);
+          audio.play('heal', 0.7);
           break;
         }
         case 'enemyAttack': {
@@ -955,6 +969,7 @@ export class BattleScene extends Phaser.Scene {
           const os = this.opViews.get(ev.target);
           if (!es || !os || !ev2) break;
           playAnim(es, es.texture.key, 'attack');
+          if (ev.ranged) audio.play('enemyShot');
           if (ev.ranged) this.tracer(es.x, es.y - 16, os.x, os.y - 14, COLORS.regime);
           else this.lunge(es, os.x - es.x, os.y - es.y);
           break;
@@ -987,6 +1002,7 @@ export class BattleScene extends Phaser.Scene {
         }
         case 'leak': {
           this.leakedUids.add(ev.uid);
+          audio.play('leak');
           this.cameras.main.shake(120, 0.004);
           this.cameras.main.flash(120, 120, 20, 20);
           break;
@@ -994,13 +1010,21 @@ export class BattleScene extends Phaser.Scene {
         case 'skill': {
           const s = this.opViews.get(ev.uid);
           if (!s) break;
+          audio.play('skill');
           const name = t(`skill.${this.battle.rosterEntry(ev.op)!.def.skill.id}.name` as StringKey);
           const label = text(this, s.x, s.y - 40, name, { align: 'center', color: CSS.gold }).setDepth(3000);
           this.tweens.add({ targets: label, y: label.y - 12, alpha: 0, duration: 900, delay: 300, onComplete: () => label.destroy() });
           this.burst(s.x, s.y - 14, COLORS.red, 10);
           break;
         }
+        case 'deploy':
+          audio.play('deploy');
+          break;
+        case 'enemyDied':
+          audio.play('kill', 0.7);
+          break;
         case 'opDied': {
+          audio.play('opDown');
           const s = this.opViews.get(ev.uid);
           if (s) this.burst(s.x, s.y - 14, COLORS.red, 10);
           break;
@@ -1206,7 +1230,8 @@ export class BattleScene extends Phaser.Scene {
     const resume = new Button(this, bx, 140, 140, 24, t('pause.resume'), () => this.closePause(), 'accent').setDepth(5001);
     const restart = new Button(this, bx, 172, 140, 24, t('pause.restart'), () => this.scene.restart({ levelId: this.level.id, mode: this.initialMode() })).setDepth(5001);
     const quit = new Button(this, bx, 204, 140, 24, t('pause.quit'), () => this.scene.start('Menu')).setDepth(5001);
-    this.pauseLayer = [g, title, resume, restart, quit];
+    const sound = soundButtons(this, GAME_W / 2 - 110, 244, 220, soundLabels(), saveSound).map((btn) => btn.setDepth(5001));
+    this.pauseLayer = [g, title, resume, restart, quit, ...sound];
   }
 
   private closePause(): void {
@@ -1219,6 +1244,63 @@ export class BattleScene extends Phaser.Scene {
     return this.scene.settings.data ? (this.scene.settings.data as BattleSceneData).mode : 'manual';
   }
 
+  // ---------------------------------------------------------------------------
+  // First-stage tutorial: a banner with one instruction at a time. The battle waits for the
+  // first deployment, so a new player is never rushed.
+
+  private static readonly TUT_KEYS: StringKey[] = ['tut.drag', 'tut.dir', 'tut.ranged', 'tut.select', 'tut.done'];
+
+  private showTutorial(): void {
+    for (const o of this.tutObjs) o.destroy();
+    this.tutObjs = [];
+    if (this.tutorial < 0) return;
+    this.pinned(() => {
+      const w = Math.min(GAME_W - 120, 440);
+      const x = Math.round((GAME_W - w) / 2);
+      const y = VIEW_TOP + 18;
+      const msg = text(this, x + 10, y + 8, t(BattleScene.TUT_KEYS[this.tutorial]), { wrap: w - 90, color: CSS.text }).setDepth(2501);
+      const h = Math.max(30, msg.height + 16);
+      const g = this.add.graphics().setDepth(2500);
+      panel(g, x, y, w, h, 0x1d1a12, COLORS.sp);
+      g.fillStyle(COLORS.sp, 1).fillRect(x + 1, y + 1, 3, h - 2);
+      const skip = new Button(this, x + w - 70, y + Math.round(h / 2) - 9, 62, 18, t('tut.skip'), () => this.endTutorial()).setDepth(2501);
+      this.tutObjs.push(g, msg, skip);
+      if (this.tutorial === 0) {
+        // Bouncing arrow over the deck.
+        const arrow = this.add.image(0, DECK_Y - 18, 'ui_arrow').setScale(3).setAngle(90).setTint(COLORS.sp).setDepth(2501).setName('tutArrow');
+        this.tweens.add({ targets: arrow, y: arrow.y + 6, duration: 400, yoyo: true, repeat: -1 });
+        this.tutObjs.push(arrow);
+      }
+    });
+  }
+
+  private updateTutorial(): void {
+    if (this.tutorial < 0) return;
+    // Keep the arrow over the cheapest card (the leftmost one; the DP panel covers the right side).
+    const arrow = this.tutObjs.find((o) => o.name === 'tutArrow') as Phaser.GameObjects.Image | undefined;
+    const first = this.cards.filter((c) => c.container.visible).sort((a, b) => a.x - b.x)[0];
+    if (arrow && first) arrow.setX(first.x + CARD_W / 2);
+    const s = this.state;
+    const deployed = this.battle.deployedCount;
+    let next = this.tutorial;
+    if (this.tutorial === 0 && s.kind === 'direction') next = 1;
+    else if (this.tutorial === 1 && deployed >= 1) next = 2;
+    else if (this.tutorial === 1 && s.kind !== 'direction' && deployed === 0) next = 0;
+    else if (this.tutorial === 2 && deployed >= 2) next = 3;
+    else if (this.tutorial === 3 && s.kind === 'selected') next = 4;
+    if (next === this.tutorial) return;
+    this.tutorial = next;
+    this.showTutorial();
+    if (next === 4) this.time.delayedCall(4000, () => this.tutorial === 4 && this.endTutorial());
+  }
+
+  private endTutorial(): void {
+    this.tutorial = -1;
+    for (const o of this.tutObjs) o.destroy();
+    this.tutObjs = [];
+    writeSave((s) => (s.tutorialDone = true));
+  }
+
   private showResult(): void {
     this.pinned(() => this.buildResult());
   }
@@ -1228,6 +1310,9 @@ export class BattleScene extends Phaser.Scene {
     const won = b.result === 'won';
     const stars = b.stars();
     let replaySaved = false;
+    audio.music(null);
+    audio.play(won ? 'win' : 'lose');
+    if (this.tutorial >= 0) this.endTutorial();
     if (won) {
       const data = this.recorder.toData(this.level);
       writeSave((s) => {

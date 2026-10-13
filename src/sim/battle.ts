@@ -187,6 +187,11 @@ export class Battle {
   }
 
   /** Queues an action to be applied at the start of the next step. */
+  /** True while a queued action has not been applied by step() yet. */
+  get hasPending(): boolean {
+    return this.pending.length > 0;
+  }
+
   queue(action: Action): void {
     this.pending.push(action);
   }

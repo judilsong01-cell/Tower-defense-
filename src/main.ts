@@ -2,6 +2,7 @@ import '@fontsource/press-start-2p/latin-400.css';
 import '@fontsource/press-start-2p/latin-ext-400.css';
 import Phaser from 'phaser';
 import { COLORS, GAME_H, GAME_W, ZOOM } from './config';
+import { audio } from './game/audio';
 import { BattleScene } from './game/scenes/BattleScene';
 import { BootScene } from './game/scenes/BootScene';
 import { HomeScene } from './game/scenes/HomeScene';
@@ -32,5 +33,8 @@ async function start(): Promise<void> {
     scene: [BootScene, HomeScene, MenuScene, SquadScene, BattleScene],
   });
 }
+
+// Audio may only start after a user gesture (browser and WebView rule).
+window.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
 
 void start();
