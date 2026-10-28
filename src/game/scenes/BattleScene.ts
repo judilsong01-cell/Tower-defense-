@@ -9,7 +9,9 @@ import { Battle, DT, type BattleEvent, type EnemyUnit, type OperatorUnit } from 
 import { rangeTiles, type TileKind } from '../../sim/grid';
 import { dataVersion, ReplayPlayer, ReplayRecorder } from '../../sim/replay';
 import { audio } from '../audio';
-import { isUnlocked, playerSquad, withSquad } from '../progress';
+import { addXp, stageXp } from '../../data/progression';
+import { OPERATORS } from '../../data/operators';
+import { isUnlocked, operatorProgress, playerSquad, withSquad } from '../progress';
 import { loadSave, session, writeSave } from '../save';
 import { Button, panel, soundButtons, text } from '../ui/widgets';
 import { saveSound, soundLabels } from './HomeScene';
@@ -163,7 +165,8 @@ export class BattleScene extends Phaser.Scene {
 
   init(data: BattleSceneData): void {
     // Every stage is played with the squad chosen in the squad screen.
-    this.level = withSquad(getLevel(data.levelId), playerSquad(loadSave().squad));
+    const saved = loadSave();
+    this.level = withSquad(getLevel(data.levelId), playerSquad(saved.squad), saved.ops);
     session.selectedLevel = this.level.id;
     this.mode = data.mode;
     this.speedIndex = 0;
@@ -792,7 +795,7 @@ export class BattleScene extends Phaser.Scene {
     const y = PANEL_Y + 7;
     const statsAtk = unit ? Math.round(this.battle.stats(unit).atk) : def.atk;
     const statsDef = unit ? Math.round(this.battle.stats(unit).def) : def.def;
-    setText(tx[0].setPosition(x, y), `${def.name}  ${t(`class.${def.cls}` as StringKey)}  [${def.tags.map((tag) => t(`tag.${tag}` as StringKey)).join(', ')}]`);
+    setText(tx[0].setPosition(x, y), `${def.name} ${t('level.short')}${this.level.opLevels?.[def.id] ?? 1}  ${t(`class.${def.cls}` as StringKey)}  [${def.tags.map((tag) => t(`tag.${tag}` as StringKey)).join(', ')}]`);
     tx[0].setColor(CSS.text);
     const hp = unit ? `HP ${Math.max(0, Math.ceil(unit.hp))}/${unit.maxHp}` : `HP ${def.hp}`;
     setText(tx[1].setPosition(x, y + 14), `${hp}  ${def.heals ? '+' : 'ATK'} ${statsAtk}  DEF ${statsDef}`);
@@ -1313,32 +1316,51 @@ export class BattleScene extends Phaser.Scene {
     audio.music(null);
     audio.play(won ? 'win' : 'lose');
     if (this.tutorial >= 0) this.endTutorial();
+    let xpGain = 0;
+    const levelUps: string[] = [];
     if (won) {
       const data = this.recorder.toData(this.level);
       writeSave((s) => {
         const prev = s.levels[this.level.id];
+        xpGain = stageXp(this.level, stars, !prev?.cleared);
         s.levels[this.level.id] = { cleared: true, stars: Math.max(prev?.stars ?? 0, stars) };
         const old = s.replays[this.level.id];
         if (!old || old.dataVersion !== data.dataVersion || stars >= old.stars) {
           s.replays[this.level.id] = { ...data, stars };
           replaySaved = true;
         }
+        // Experience for every operator that took part (the whole squad).
+        s.ops ??= {};
+        for (const id of this.level.squad) {
+          const next = addXp(operatorProgress(s.ops, id), xpGain);
+          s.ops[id] = { level: next.level, xp: next.xp };
+          if (next.gained > 0) levelUps.push(`${OPERATORS[id]?.name ?? id} ${t('level.short')} ${next.level}`);
+        }
       });
     }
 
     const g = this.add.graphics().setDepth(5000);
     g.fillStyle(0x000000, 0.75).fillRect(0, 0, GAME_W, GAME_H);
-    g.fillStyle(won ? COLORS.red : 0x3a3d44, 1).fillRect(0, 96, GAME_W, 2).fillRect(0, 246, GAME_W, 2);
-    text(this, GAME_W / 2, 116, won ? t('result.won') : t('result.lost'), { size: 16, align: 'center', color: won ? CSS.text : CSS.dim }).setDepth(5001);
+    g.fillStyle(won ? COLORS.red : 0x3a3d44, 1).fillRect(0, 78, GAME_W, 2).fillRect(0, 272, GAME_W, 2);
+    text(this, GAME_W / 2, 94, won ? t('result.won') : t('result.lost'), { size: 16, align: 'center', color: won ? CSS.text : CSS.dim }).setDepth(5001);
     for (let i = 0; i < 3; i++) {
-      this.add.image(GAME_W / 2 - 26 + i * 26, 156, i < stars ? 'ui_star' : 'ui_star_empty').setScale(2).setDepth(5001);
+      this.add.image(GAME_W / 2 - 26 + i * 26, 132, i < stars ? 'ui_star' : 'ui_star_empty').setScale(2).setDepth(5001);
     }
-    text(this, GAME_W / 2, 178, t('result.stats', { k: b.killed, t: b.totalEnemies, l: b.lives }), { align: 'center', color: CSS.dim }).setDepth(5001);
-    if (replaySaved) text(this, GAME_W / 2, 194, t('result.replaySaved'), { align: 'center', color: CSS.gold }).setDepth(5001);
+    text(this, GAME_W / 2, 150, t('result.stats', { k: b.killed, t: b.totalEnemies, l: b.lives }), { align: 'center', color: CSS.dim }).setDepth(5001);
+    const notes: [string, string][] = [];
+    if (xpGain > 0) notes.push([t('result.xp', { xp: xpGain }), CSS.gold]);
+    if (levelUps.length) notes.push([`${t('result.levelUp')} ${levelUps.join('  ')}`, CSS.green]);
+    if (replaySaved) notes.push([t('result.replaySaved'), CSS.dim]);
     const index = LEVELS.findIndex((l) => l.id === this.level.id);
     const after = won ? LEVELS[index + 1] : undefined;
     const next = after && isUnlocked(after.id, loadSave().levels) ? after : undefined;
-    if (after && !next) text(this, GAME_W / 2, replaySaved ? 194 + 12 : 194, t('stage.locked', { l: levelLabel(this.level) }), { align: 'center', color: CSS.gold }).setDepth(5001);
+    if (after && !next) notes.push([t('stage.locked', { l: levelLabel(this.level) }), CSS.gold]);
+    if (!won) notes.push([t('result.tip'), CSS.dim]);
+    let ny = 166;
+    for (const [msg, color] of notes) {
+      const tx = text(this, GAME_W / 2, ny, msg, { align: 'center', color, wrap: GAME_W - 80 }).setDepth(5001);
+      ny += tx.height + 4;
+    }
     const buttons: [string, () => void][] = [[t('result.retry'), () => this.scene.restart({ levelId: this.level.id, mode: this.initialMode() })]];
     if (next) buttons.push([t('result.next'), () => this.scene.restart({ levelId: next.id, mode: 'manual' })]);
     buttons.push([t('result.menu'), () => this.scene.start('Menu')]);
@@ -1347,7 +1369,7 @@ export class BattleScene extends Phaser.Scene {
     let bx = GAME_W / 2 - (buttons.length * bw + (buttons.length - 1) * gap) / 2;
     buttons.forEach(([label, onClick], i) => {
       const accent = next ? i === 1 : i === 0;
-      new Button(this, bx, 212, bw, 24, label, onClick, accent ? 'accent' : 'normal').setDepth(5001);
+      new Button(this, bx, Math.max(236, ny + 6), bw, 24, label, onClick, accent ? 'accent' : 'normal').setDepth(5001);
       bx += bw + gap;
     });
   }

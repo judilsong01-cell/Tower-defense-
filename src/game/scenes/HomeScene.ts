@@ -4,7 +4,7 @@ import { LEVELS, levelLabel } from '../../data/levels';
 import { OPERATORS } from '../../data/operators';
 import { getLang, LANGS, setLang, t, type StringKey } from '../../i18n';
 import { loadPortrait, PORTRAIT, unitMeta } from '../art';
-import { isUnlocked, playerSquad, totalStars } from '../progress';
+import { isUnlocked, operatorProgress, playerSquad, totalStars } from '../progress';
 import { loadSave, session, writeSave } from '../save';
 import { audio } from '../audio';
 import { Button, slantPanel, soundButtons, tapZone, text } from '../ui/widgets';
@@ -96,7 +96,7 @@ export class HomeScene extends Phaser.Scene {
     const id = squad[this.featured];
     const def = OPERATORS[id];
     this.heroName.setText(def.name);
-    this.heroClass.setText(t(`class.${def.cls}` as StringKey));
+    this.heroClass.setText(`${t(`class.${def.cls}` as StringKey)} · ${t('level.short')} ${operatorProgress(loadSave().ops, id).level}`);
     // Show the game sprite right away, then swap to the detailed portrait once it has loaded.
     const meta = unitMeta(this, `op_${id}`);
     this.hero.setTexture(`op_${id}`, 0).setOrigin(0.5, meta.originY).setScale(meta.scale * 2.4);

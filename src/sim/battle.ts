@@ -4,6 +4,7 @@
 
 import { ENEMIES } from '../data/enemies';
 import { OPERATORS } from '../data/operators';
+import { levelledDef } from '../data/progression';
 import type { DamageTag, Dir, EnemyDef, LevelDef, OperatorDef, Point } from '../data/types';
 import { buildRoutePath, Grid, rangeTiles, tileKey } from './grid';
 
@@ -157,8 +158,9 @@ export class Battle {
     for (const route of level.routes) paths.set(route.id, buildRoutePath(this.grid, route));
     this.routePaths = paths;
     this.roster = level.squad.map((id) => {
-      const def = OPERATORS[id];
-      if (!def) throw new Error(`Unknown operator in squad: ${id}`);
+      const base = OPERATORS[id];
+      if (!base) throw new Error(`Unknown operator in squad: ${id}`);
+      const def = levelledDef(base, level.opLevels?.[id] ?? 1);
       return { def, status: 'ready' as RosterStatus, cooldown: 0, deployCount: 0 };
     });
     this.dp = level.startDp;

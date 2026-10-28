@@ -147,4 +147,6 @@ export interface LevelDef {
   dpPerSecond: number;
   deployLimit: number;
   squad: readonly string[];
+  /** Operator levels for this battle (missing = level 1). Set from the save, not in stage data. */
+  opLevels?: Readonly<Record<string, number>>;
 }

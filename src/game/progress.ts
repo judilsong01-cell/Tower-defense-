@@ -3,6 +3,7 @@
 import { LEVELS } from '../data/levels';
 import { FULL_SQUAD } from '../data/levels/common';
 import { OPERATORS } from '../data/operators';
+import { type OperatorProgress } from '../data/progression';
 import type { LevelDef } from '../data/types';
 import type { LevelProgress } from './save';
 
@@ -20,8 +21,13 @@ export function playerSquad(saved: readonly string[] | undefined): string[] {
 }
 
 /** The stage as played with the player's squad (the AI, replays and the deck all use it). */
-export function withSquad(level: LevelDef, squad: readonly string[]): LevelDef {
-  return { ...level, squad };
+export function withSquad(level: LevelDef, squad: readonly string[], ops?: Record<string, OperatorProgress>): LevelDef {
+  const opLevels = ops ? Object.fromEntries(squad.filter((id) => (ops[id]?.level ?? 1) > 1).map((id) => [id, ops[id].level])) : undefined;
+  return opLevels && Object.keys(opLevels).length ? { ...level, squad, opLevels } : { ...level, squad };
+}
+
+export function operatorProgress(ops: Record<string, OperatorProgress> | undefined, id: string): OperatorProgress {
+  return ops?.[id] ?? { level: 1, xp: 0 };
 }
 
 /** The first stage is always open; every other one needs 3 stars on the stage before it. */

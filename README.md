@@ -16,6 +16,8 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
   `npm run balance` mostra o resultado da IA em cada estágio.
 - **Colocação fácil no celular**: o mapa abre ampliado (casas de ~9 mm), **belisca para aproximar/afastar**
   (no PC: Ctrl + roda do rato) e a colocação é magnética: largas perto de uma casa válida e o operador vai para ela.
+- **Níveis dos operadores**: cada vitória dá XP a toda a equipa (mais com 3 estrelas e no primeiro clear); até ao
+  nível 30, com mais HP, ATK e DEF. Os estágios estão verificados no nível 1, por isso subir de nível só facilita.
 - **Som e música**: efeitos para cada ação (golpes, tiros, explosões, curas, skills, vidas perdidas) e música com
   ritmo de inspiração angolana, tudo gerado no jogo (sem ficheiros de áudio). Liga/desliga no ecrã inicial e na pausa.
 - **Tutorial no 1-1**: dicas passo a passo na primeira vez; a batalha espera até colocares o primeiro operador.

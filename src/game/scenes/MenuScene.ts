@@ -166,7 +166,7 @@ export class MenuScene extends Phaser.Scene {
 
     const save = loadSave();
     const open = isUnlocked(level.id, save.levels);
-    const played = withSquad(level, playerSquad(save.squad));
+    const played = withSquad(level, playerSquad(save.squad), save.ops);
     const replay = save.replays[level.id];
     const replayValid = !!replay && replay.dataVersion === dataVersion(played);
     const enemies = level.waves.reduce((n, wave) => n + wave.count, 0);

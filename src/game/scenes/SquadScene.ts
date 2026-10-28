@@ -6,7 +6,8 @@ import { OPERATORS } from '../../data/operators';
 import type { LevelDef, OperatorClass } from '../../data/types';
 import { t, type StringKey } from '../../i18n';
 import { loadPortrait, PORTRAIT, unitMeta } from '../art';
-import { playerSquad, SQUAD_MAX } from '../progress';
+import { levelledDef, MAX_LEVEL, xpToNext } from '../../data/progression';
+import { operatorProgress, playerSquad, SQUAD_MAX } from '../progress';
 import { loadSave, writeSave } from '../save';
 import { audio } from '../audio';
 import { Button, panel, tapZone, text } from '../ui/widgets';
@@ -108,7 +109,8 @@ export class SquadScene extends Phaser.Scene {
       if (!inSquad) sprite.setAlpha(0.45).setTint(0x9a9aa6);
 
       add(text(this, x + cw / 2, y + ch - 28, def.name, { align: 'center', color: inSquad ? CSS.text : CSS.dim }));
-      add(text(this, x + cw / 2, y + ch - 14, inSquad ? `#${slot + 1}` : t('squad.out'), { align: 'center', color: inSquad ? CSS.red : CSS.dim }));
+      const lv = `${t('level.short')}${operatorProgress(loadSave().ops, id).level}`;
+      add(text(this, x + cw / 2, y + ch - 14, inSquad ? `#${slot + 1} ${lv}` : `${t('squad.out')} ${lv}`, { align: 'center', color: inSquad ? CSS.red : CSS.dim }));
       add(tapZone(this, x, y, cw, ch, () => {
         this.selected = id;
         this.refresh();
@@ -124,7 +126,8 @@ export class SquadScene extends Phaser.Scene {
       return o;
     };
     const id = this.selected;
-    const def = OPERATORS[id];
+    const progress = operatorProgress(loadSave().ops, id);
+    const def = levelledDef(OPERATORS[id], progress.level);
     const squad = this.squad();
     const inSquad = squad.includes(id);
     const x = this.leftW + 20;
@@ -153,7 +156,13 @@ export class SquadScene extends Phaser.Scene {
     const sx = x + 126;
     const sw = w - (sx - x) - 10;
     add(text(this, sx, y + 10, def.name, { size: 12 }));
-    add(text(this, sx, y + 30, t(`class.${def.cls}` as StringKey), { color: CSS.dim }));
+    add(text(this, sx, y + 30, `${t(`class.${def.cls}` as StringKey)} · ${t('squad.level', { n: progress.level })}`, { color: CSS.dim, wrap: sw }));
+    // Experience towards the next level, under the model.
+    const need = xpToNext(progress.level);
+    const frac = progress.level >= MAX_LEVEL ? 1 : progress.xp / need;
+    g.fillStyle(0x000000, 1).fillRect(px - 48, feet + 8, 96, 4);
+    g.fillStyle(COLORS.sp, 1).fillRect(px - 48, feet + 8, Math.round(96 * frac), 4);
+    add(text(this, px, feet + 14, progress.level >= MAX_LEVEL ? t('squad.maxLevel') : t('squad.xp', { xp: progress.xp, need }), { align: 'center', color: CSS.dim }));
     add(text(this, sx, y + 44, t(`squad.placement.${def.placement}` as StringKey), { color: CSS.dim, wrap: sw }));
     add(text(this, sx, y + 70, def.tags.map((tag) => t(`tag.${tag}` as StringKey)).join(', '), { color: CSS.gold, wrap: sw }));
     const stats = [
@@ -179,8 +188,8 @@ export class SquadScene extends Phaser.Scene {
 
     // Skill.
     const skill = def.skill;
-    add(text(this, x + 14, y + 200, `${t('panel.skill')}: ${t(`skill.${skill.id}.name` as StringKey)}`, { color: CSS.gold, wrap: w - 28 }));
-    add(text(this, x + 14, y + 214, t(`skill.${skill.id}.desc` as StringKey), { color: CSS.dim, wrap: w - 28 }));
+    add(text(this, x + 14, y + 216, `${t('panel.skill')}: ${t(`skill.${skill.id}.name` as StringKey)}`, { color: CSS.gold, wrap: w - 28 }));
+    add(text(this, x + 14, y + 230, t(`skill.${skill.id}.desc` as StringKey), { color: CSS.dim, wrap: w - 28 }));
 
     // Warnings for the coming stage.
     const notes: string[] = [];
@@ -191,7 +200,7 @@ export class SquadScene extends Phaser.Scene {
     } else {
       notes.push(t('squad.hint'));
     }
-    add(text(this, x + 14, y + 246, notes.join('\n'), { color: notes.length > 1 ? CSS.gold : CSS.dim, wrap: w - 28 }));
+    add(text(this, x + 14, y + 260, notes.join('\n'), { color: notes.length > 1 ? CSS.gold : CSS.dim, wrap: w - 28 }));
 
     // Buttons.
     const by = y + h - 30;

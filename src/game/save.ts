@@ -21,6 +21,8 @@ export interface SaveData {
   /** The first-stage tutorial was completed or skipped. */
   tutorialDone?: boolean;
   levels: Record<string, LevelProgress>;
+  /** Operator levels and experience (missing = level 1). */
+  ops?: Record<string, { level: number; xp: number }>;
   /** Operator ids chosen in the squad screen, in deck order. Missing: the default squad. */
   squad?: string[];
   replays: Record<string, ReplayData & { stars: number }>;
