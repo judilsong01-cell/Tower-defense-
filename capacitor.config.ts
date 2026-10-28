@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 // NOTE: appId is provisional. It becomes permanent once the app is published on Google Play.
 const config: CapacitorConfig = {
-  appId: 'com.judilsong.towerdefense',
+  appId: 'com.zuritechlab.muxima',
   appName: 'Muxima',
   webDir: 'dist',
   android: {

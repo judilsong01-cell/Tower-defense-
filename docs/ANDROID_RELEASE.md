@@ -16,7 +16,7 @@ Descarregas os ficheiros em **GitHub → Actions → (execução) → Artifacts*
 
 ## 2. Antes da primeira publicação
 
-1. **ID da app**: está como `com.judilsong.towerdefense` (provisório). Depois de publicado **nunca mais pode mudar**.
+1. **ID da app**: `com.zuritechlab.muxima` (conta Zuri Tech Lab). Depois do primeiro envio para a Google Play **nunca mais pode mudar**.
    Para o trocar, altera `appId` em `capacitor.config.ts` e `namespace`/`applicationId` em `android/app/build.gradle`,
    e move `MainActivity.java` para a pasta do novo pacote (ou pede-me que o faça).
 2. **Nome da app**: `appName` em `capacitor.config.ts` e `app_name` em `android/app/src/main/res/values/strings.xml`.

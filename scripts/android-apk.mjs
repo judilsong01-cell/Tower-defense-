@@ -67,5 +67,5 @@ if (install.status !== 0) {
   console.error('Se diz INSTALL_FAILED_UPDATE_INCOMPATIBLE, desinstala o jogo do celular e tenta outra vez.\n');
   process.exit(1);
 }
-spawnSync(adb, ['shell', 'monkey', '-p', 'com.judilsong.towerdefense', '-c', 'android.intent.category.LAUNCHER', '1'], { stdio: 'ignore' });
+spawnSync(adb, ['shell', 'monkey', '-p', 'com.zuritechlab.muxima', '-c', 'android.intent.category.LAUNCHER', '1'], { stdio: 'ignore' });
 console.log('Instalado e aberto no celular.\n');

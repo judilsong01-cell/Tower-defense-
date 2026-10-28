@@ -9,10 +9,10 @@ def signingValue = { String env, String prop -> System.getenv(env) ?: keystorePr
 def releaseStoreFile = signingValue('ANDROID_KEYSTORE_PATH', 'storeFile')
 
 android {
-    namespace = "com.judilsong.towerdefense"
+    namespace = "com.zuritechlab.muxima"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.judilsong.towerdefense"
+        applicationId "com.zuritechlab.muxima"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // CI passes the build number so every upload to Google Play gets a higher versionCode.

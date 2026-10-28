@@ -88,6 +88,10 @@ Gera o APK, instala-o e abre o jogo no celular.
 
 ## 5. Atualizar o jogo no celular
 
+> **Mudança de ID (outubro 2026):** a app passou de `com.judilsong.towerdefense` para `com.zuritechlab.muxima`.
+> Para o Android é uma app nova: a primeira vez, **desinstala a versão antiga** (o progresso dessa versão não passa
+> para a nova).
+
 Quando eu fizer alterações:
 
 ```powershell
