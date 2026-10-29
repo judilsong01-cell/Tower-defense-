@@ -169,7 +169,7 @@ export class BattleScene extends Phaser.Scene {
     this.level = withSquad(getLevel(data.levelId), playerSquad(saved.squad), saved.ops);
     session.selectedLevel = this.level.id;
     this.mode = data.mode;
-    this.speedIndex = 0;
+    this.speedIndex = Math.min(SPEEDS.length - 1, Math.max(0, loadSave().speed ?? 0));
     this.menuPaused = false;
     this.acc = 0;
     this.state = { kind: 'idle' };
@@ -653,6 +653,7 @@ export class BattleScene extends Phaser.Scene {
     const pauseBtn = new Button(this, GAME_W - 36, 3, 28, 20, 'II', () => this.openPause());
     this.speedBtn = new Button(this, GAME_W - 76, 3, 36, 20, 'x1', () => {
       this.speedIndex = (this.speedIndex + 1) % SPEEDS.length;
+      writeSave((s) => (s.speed = this.speedIndex));
     });
     this.autoBtn = new Button(this, GAME_W - 152, 3, 72, 20, t('hud.autoSkill'), () => {
       const on = !this.battle.autoSkill;
@@ -662,7 +663,8 @@ export class BattleScene extends Phaser.Scene {
     for (const b of [pauseBtn, this.speedBtn, this.autoBtn]) b.setDepth(2000);
 
     if (this.locked) {
-      const label = this.mode === 'replay' ? t('hud.modeReplay') : t('hud.modeAi');
+      const mode = this.mode === 'replay' ? t('hud.modeReplay') : t('hud.modeAi');
+      const label = session.autoRepeat ? `${mode} · ${t('hud.repeat', { n: session.repeatRuns + 1 })}` : mode;
       const badge = text(this, 168, 9, label, { color: CSS.red }).setDepth(2000);
       const takeOver = new Button(this, 168 + badge.width + 8, 3, 84, 20, t('hud.takeOver'), () => this.takeOver(), 'accent').setDepth(2000);
       this.modeBadge = [badge, takeOver];
@@ -702,6 +704,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private takeOver(): void {
+    session.autoRepeat = false;
     this.driver = null;
     this.mode = 'manual';
     for (const o of this.modeBadge) o.destroy();
@@ -1366,7 +1369,7 @@ export class BattleScene extends Phaser.Scene {
 
     const g = this.add.graphics().setDepth(5000);
     g.fillStyle(0x000000, 0.75).fillRect(0, 0, GAME_W, GAME_H);
-    g.fillStyle(won ? COLORS.red : 0x3a3d44, 1).fillRect(0, 78, GAME_W, 2).fillRect(0, 272, GAME_W, 2);
+    g.fillStyle(won ? COLORS.red : 0x3a3d44, 1).fillRect(0, 78, GAME_W, 2).fillRect(0, 304, GAME_W, 2);
     text(this, GAME_W / 2, 94, won ? t('result.won') : t('result.lost'), { size: 16, align: 'center', color: won ? CSS.text : CSS.dim }).setDepth(5001);
     for (let i = 0; i < 3; i++) {
       this.add.image(GAME_W / 2 - 26 + i * 26, 132, i < stars ? 'ui_star' : 'ui_star_empty').setScale(2).setDepth(5001);
@@ -1392,11 +1395,63 @@ export class BattleScene extends Phaser.Scene {
     const bw = 120;
     const gap = 8;
     let bx = GAME_W / 2 - (buttons.length * bw + (buttons.length - 1) * gap) / 2;
+    const by = Math.max(232, ny + 6);
     buttons.forEach(([label, onClick], i) => {
       const accent = next ? i === 1 : i === 0;
-      new Button(this, bx, Math.max(236, ny + 6), bw, 24, label, onClick, accent ? 'accent' : 'normal').setDepth(5001);
+      new Button(this, bx, by, bw, 24, label, onClick, accent ? 'accent' : 'normal').setDepth(5001);
       bx += bw + gap;
     });
+    this.autoRepeatControls(won, by + 32);
+  }
+
+  /**
+   * AUTO-REPETIR: after a win the stage restarts by itself (best replay if still valid, else
+   * the AI) until the player turns it off or a run is lost.
+   */
+  private autoRepeatControls(won: boolean, y: number): void {
+    const label = () => t('result.autoRepeat', { v: t(session.autoRepeat ? 'set.on' : 'set.off') });
+    const info = text(this, GAME_W / 2, y + 26, '', { align: 'center', color: CSS.gold }).setDepth(5001);
+    let timer: Phaser.Time.TimerEvent | null = null;
+    const stop = () => {
+      timer?.remove();
+      timer = null;
+      info.setText('');
+    };
+    const start = () => {
+      let left = 3;
+      info.setText(t('result.repeatIn', { s: left }));
+      timer = this.time.addEvent({
+        delay: 1000,
+        repeat: 2,
+        callback: () => {
+          left--;
+          if (left > 0) info.setText(t('result.repeatIn', { s: left }));
+          else this.scene.restart({ levelId: this.level.id, mode: this.repeatMode() });
+        },
+      });
+    };
+    const toggle: Button = new Button(this, GAME_W / 2 - 90, y, 180, 20, label(), () => {
+      session.autoRepeat = !session.autoRepeat;
+      session.repeatRuns = 0;
+      toggle.setLabel(label()).setStyle(session.autoRepeat ? 'toggled' : 'normal');
+      if (session.autoRepeat && won) start();
+      else stop();
+    }, session.autoRepeat ? 'toggled' : 'normal').setDepth(5001);
+    if (!session.autoRepeat) return;
+    if (won) {
+      session.repeatRuns++;
+      start();
+    } else {
+      session.autoRepeat = false;
+      toggle.setLabel(label()).setStyle('normal');
+      info.setText(t('result.repeatStopped'));
+    }
+  }
+
+  /** Mode for an automatic repeat: the best replay when it still matches, otherwise the AI. */
+  private repeatMode(): BattleMode {
+    const replay = loadSave().replays[this.level.id];
+    return replay && replay.dataVersion === dataVersion(this.level) ? 'replay' : 'ai';
   }
 }
 

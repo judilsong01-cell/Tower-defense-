@@ -15,6 +15,8 @@ export interface SaveData {
   autoSkill: boolean;
   /** Last map zoom chosen in battle (pinch / ctrl+wheel). */
   mapZoom?: number;
+  /** Battle speed index (x1/x2/x3), kept between battles. */
+  speed?: number;
   /** Sound effects / music switches (default on). */
   sfx?: boolean;
   music?: boolean;
@@ -61,4 +63,8 @@ export function writeSave(update: (data: SaveData) => void): void {
 /** UI state kept while the app is open (not persisted). */
 export const session = {
   selectedLevel: 'l1',
+  /** Replay the current stage automatically after each win (farming XP). */
+  autoRepeat: false,
+  /** Wins in a row while auto-repeating. */
+  repeatRuns: 0,
 };

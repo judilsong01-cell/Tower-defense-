@@ -42,6 +42,7 @@ export class MenuScene extends Phaser.Scene {
     this.leftW = Math.round(GAME_W * 0.47);
     const save = loadSave();
     audio.music('menu');
+    session.autoRepeat = false;
 
     // Top bar.
     const g = this.add.graphics();
