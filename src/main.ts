@@ -3,6 +3,7 @@ import '@fontsource/press-start-2p/latin-ext-400.css';
 import Phaser from 'phaser';
 import { COLORS, GAME_H, GAME_W, ZOOM } from './config';
 import { audio } from './game/audio';
+import { initBackButton } from './game/nav';
 import { BattleScene } from './game/scenes/BattleScene';
 import { BootScene } from './game/scenes/BootScene';
 import { HomeScene } from './game/scenes/HomeScene';
@@ -17,7 +18,7 @@ async function start(): Promise<void> {
     // Fallback font is acceptable.
   }
 
-  new Phaser.Game({
+  const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
     width: GAME_W * ZOOM,
@@ -32,6 +33,7 @@ async function start(): Promise<void> {
     input: { activePointers: 2 },
     scene: [BootScene, HomeScene, MenuScene, SquadScene, BattleScene],
   });
+  initBackButton(game);
 }
 
 // Audio may only start after a user gesture (browser and WebView rule).

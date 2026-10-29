@@ -63,6 +63,10 @@ export class SquadScene extends Phaser.Scene {
     this.refresh();
   }
 
+  onBack(): void {
+    this.scene.start(this.level ? 'Menu' : 'Home');
+  }
+
   private squad(): string[] {
     return playerSquad(loadSave().squad);
   }

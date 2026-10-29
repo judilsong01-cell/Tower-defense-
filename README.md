@@ -20,6 +20,8 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
   nível 30, com mais HP, ATK e DEF. Os estágios estão verificados no nível 1, por isso subir de nível só facilita.
 - **Som e música**: efeitos para cada ação (golpes, tiros, explosões, curas, skills, vidas perdidas) e música com
   ritmo de inspiração angolana, tudo gerado no jogo (sem ficheiros de áudio). Liga/desliga no ecrã inicial e na pausa.
+- **Feito para o celular**: o botão voltar do Android volta ao ecrã anterior (em batalha abre a pausa), a batalha
+  pausa sozinha se saíres da app, o ecrã não se apaga durante o jogo e o telemóvel vibra quando perdes uma vida.
 - **Tutorial no 1-1**: dicas passo a passo na primeira vez; a batalha espera até colocares o primeiro operador.
 - **Ecrã inteiro no celular**: a largura do jogo adapta-se ao formato do ecrã (16:9 até 2.4:1, ex. 20:9 no A21s).
 

@@ -35,7 +35,12 @@ const texCache = new Map();
 function tex(kind, base, accent = '#000000') {
   const key = kind + base + accent;
   if (texCache.has(key)) return texCache.get(key);
-  const S = 128;
+  // Liquids cover large areas: a bigger, seamlessly wrapping texture so the pattern does not repeat visibly.
+  const liquid = kind === 'water' || kind === 'lava';
+  const S = liquid ? 512 : 128;
+  const wrap = (draw) => {
+    for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) { g.save(); g.translate(ox, oy); draw(); g.restore(); }
+  };
   const cv = document.createElement('canvas');
   cv.width = cv.height = S;
   const g = cv.getContext('2d');
@@ -123,16 +128,18 @@ function tex(kind, base, accent = '#000000') {
     speckle(120, 0.16, false);
     speckle(60, 0.12, true);
   } else if (kind === 'water') {
-    speckle(30, 0.08, false);
+    speckle(480, 0.08, false);
+    const waves = Array.from({ length: 96 }, () => [rnd() * S, rnd() * S, 14 + rnd() * 16]);
     g.strokeStyle = 'rgba(255,255,255,0.25)';
     g.lineWidth = 3;
-    for (let i = 0; i < 6; i++) {
-      const x = rnd() * S, y = rnd() * S;
-      g.beginPath();
-      g.moveTo(x, y);
-      g.quadraticCurveTo(x + 10, y - 5, x + 22, y);
-      g.stroke();
-    }
+    wrap(() => {
+      for (const [x, y, len] of waves) {
+        g.beginPath();
+        g.moveTo(x, y);
+        g.quadraticCurveTo(x + len / 2, y - 5, x + len, y);
+        g.stroke();
+      }
+    });
   } else if (kind === 'stars') {
     g.fillStyle = base;
     g.fillRect(0, 0, S, S);
@@ -149,22 +156,26 @@ function tex(kind, base, accent = '#000000') {
       g.fill();
     }
   } else if (kind === 'lava') {
-    g.fillStyle = 'rgba(40,10,6,0.55)';
-    for (let i = 0; i < 9; i++) {
-      g.beginPath();
-      g.ellipse(rnd() * S, rnd() * S, 8 + rnd() * 18, 5 + rnd() * 10, rnd() * 3, 0, Math.PI * 2);
-      g.fill();
-    }
-    g.strokeStyle = '#ffb040';
-    g.lineWidth = 2.5;
-    for (let i = 0; i < 8; i++) {
-      g.beginPath();
-      const x = rnd() * S, y = rnd() * S;
-      g.moveTo(x, y);
-      g.lineTo(x + rnd() * 30 - 15, y + rnd() * 30 - 15);
-      g.lineTo(x + rnd() * 50 - 25, y + rnd() * 50 - 25);
-      g.stroke();
-    }
+    // Dark cooling crust of varied sizes and glowing cracks, wrapped across the edges.
+    const crust = Array.from({ length: 110 }, () => [rnd() * S, rnd() * S, 6 + rnd() * 26, 4 + rnd() * 14, rnd() * 3, 0.35 + rnd() * 0.3]);
+    const cracks = Array.from({ length: 120 }, () => [rnd() * S, rnd() * S, rnd() * 30 - 15, rnd() * 30 - 15, rnd() * 50 - 25, rnd() * 50 - 25]);
+    wrap(() => {
+      for (const [x, y, rx, ry, rot, a] of crust) {
+        g.fillStyle = `rgba(40,10,6,${a})`;
+        g.beginPath();
+        g.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.strokeStyle = '#ffb040';
+      g.lineWidth = 2.5;
+      for (const [x, y, ax, ay, bx, by] of cracks) {
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x + ax, y + ay);
+        g.lineTo(x + bx, y + by);
+        g.stroke();
+      }
+    });
   } else if (kind === 'cracks') {
     speckle(70, 0.14, false);
     g.strokeStyle = accent;
@@ -300,7 +311,7 @@ export function buildMap(level) {
   if (B.wall === 'liquid') {
     const t = tex(B.liquidTex, B.liquid);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set((x1 - x0) / 1.5, ((y1 - y0) * D) / 1.5);
+    t.repeat.set((x1 - x0) / 6, ((y1 - y0) * D) / 6);
     const m = B.liquidGlow ? new THREE.MeshBasicMaterial({ color: '#ffffff', map: t }) : tmat('#ffffff', t);
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, (y1 - y0) * D), m);
     plane.rotation.x = -Math.PI / 2;

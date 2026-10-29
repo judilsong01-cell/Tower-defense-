@@ -196,9 +196,15 @@ export class BattleScene extends Phaser.Scene {
     const toMap = (o: Phaser.GameObjects.GameObject) => this.uiCam.ignore(o);
     this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, toMap);
     this.pinch = null;
+    // Leaving the app mid-battle (call, home button) opens the pause menu.
+    const onHidden = () => {
+      if (document.hidden && !this.resultShown && !this.menuPaused && this.battle.result === 'running') this.openPause();
+    };
+    document.addEventListener('visibilitychange', onHidden);
     this.events.once('shutdown', () => {
       this.anims.globalTimeScale = 1;
       this.events.off(Phaser.Scenes.Events.ADDED_TO_SCENE, toMap);
+      document.removeEventListener('visibilitychange', onHidden);
     });
     this.battle = new Battle(this.level);
     this.recorder = new ReplayRecorder(this.battle);
@@ -615,6 +621,24 @@ export class BattleScene extends Phaser.Scene {
     this.state = { kind: 'idle' };
   }
 
+  /** Android back / Escape: close what is open, else pause; from the result screen, leave. */
+  onBack(): void {
+    if (this.resultShown) {
+      this.scene.start('Menu');
+      return;
+    }
+    if (this.menuPaused) {
+      this.closePause();
+      return;
+    }
+    if (this.state.kind !== 'idle') {
+      this.ghost.setVisible(false);
+      this.cancelPlacement();
+      return;
+    }
+    this.openPause();
+  }
+
   // ---------------------------------------------------------------------------
   // HUD, deck and panel
 
@@ -1006,6 +1030,7 @@ export class BattleScene extends Phaser.Scene {
         case 'leak': {
           this.leakedUids.add(ev.uid);
           audio.play('leak');
+          if (this.mode === 'manual') navigator.vibrate?.(90);
           this.cameras.main.shake(120, 0.004);
           this.cameras.main.flash(120, 120, 20, 20);
           break;

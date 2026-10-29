@@ -7,6 +7,7 @@ import { loadPortrait, PORTRAIT, unitMeta } from '../art';
 import { isUnlocked, operatorProgress, playerSquad, totalStars } from '../progress';
 import { loadSave, session, writeSave } from '../save';
 import { audio } from '../audio';
+import { minimizeApp } from '../nav';
 import { Button, slantPanel, soundButtons, tapZone, text } from '../ui/widgets';
 
 /** Main menu: a clean title screen with the squad leader in 3D and two big entries. */
@@ -89,6 +90,10 @@ export class HomeScene extends Phaser.Scene {
       writeSave((s) => (s.lang = lang));
       this.scene.restart();
     });
+  }
+
+  onBack(): void {
+    minimizeApp();
   }
 
   private feature(squad: readonly string[], index: number): void {

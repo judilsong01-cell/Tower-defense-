@@ -59,6 +59,10 @@ export class MenuScene extends Phaser.Scene {
     this.showChapter(LEVELS.find((l) => l.id === session.selectedLevel)!.chapter);
   }
 
+  onBack(): void {
+    this.scene.start('Home');
+  }
+
   private showChapter(chapter: number): void {
     for (const o of this.chapterObjs) o.destroy();
     this.chapterObjs = [];
