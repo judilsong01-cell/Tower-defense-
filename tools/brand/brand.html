@@ -36,6 +36,18 @@ if (view === 'icon') body = `<rect width="${W}" height="${H}" fill="url(#glow)"/
 if (view === 'round') body = `<circle cx="${W / 2}" cy="${H / 2}" r="${W / 2}" fill="url(#glow)"/><g transform="translate(${W / 2},${H * 0.52}) scale(${W / 185})"><use href="#heart"/></g>`;
 // Adaptive icon foreground: 108dp canvas, keep the mark inside the 66dp safe circle.
 if (view === 'fg') body = `<g transform="translate(${W / 2},${H * 0.515}) scale(${W / 250})"><use href="#heart"/></g>`;
+// Icon "I3": Brasa with the heart as a badge. brasa_hd.png is her idle pose rendered at 3x the
+// menu portrait (same 360x320 framing, 1080x960 px) by tools/models3d (sheet.html, zoom 9).
+const PORTRAIT = 'brasa_hd.png';
+const brasa = (s, ox = 0, oy = 0) => `<image href="${PORTRAIT}" x="${ox - 0.211 * s}" y="${oy - 0.189 * s}" width="${1.444 * s}" height="${1.284 * s}"/>`;
+const badge = (s, cx, cy) => `<g transform="translate(${cx},${cy})"><circle r="${0.105 * s}" fill="#0e0f12"/><g transform="scale(${(s / 100) * 0.17})"><use href="#heart"/></g></g>`;
+if (view === 'icon3') body = `<rect width="${W}" height="${H}" fill="url(#glow)"/>${brasa(W)}${badge(W, W * 0.8, H * 0.8)}`;
+if (view === 'round3') body = `<defs><clipPath id="c"><circle cx="${W / 2}" cy="${H / 2}" r="${W / 2}"/></clipPath></defs><g clip-path="url(#c)"><rect width="${W}" height="${H}" fill="url(#glow)"/>${brasa(W)}${badge(W, W * 0.76, H * 0.76)}</g>`;
+// Adaptive foreground: the same picture shrunk into the 66dp safe zone of the 108dp canvas.
+if (view === 'fg3') {
+  const s = W * 0.64, o = (W - s) / 2;
+  body = `${brasa(s, o, o)}${badge(s, o + s * 0.8, o + s * 0.8)}`;
+}
 if (view === 'splash') {
   const s = Math.min(W, H);
   body = `<rect width="${W}" height="${H}" fill="url(#glow)"/>
@@ -45,6 +57,11 @@ if (view === 'splash') {
 if (view === 'logo') body = `<g transform="translate(${H * 0.52},${H * 0.5}) scale(${H / 135})"><use href="#heart"/></g>
   <text x="${H * 1.04}" y="${H * 0.78}" font-family="Bebas" font-size="${H * 0.86}" letter-spacing="${H * 0.05}" fill="#eceef1">MUXIMA</text>`;
 document.getElementById('stage').innerHTML = `<svg xmlns="${ns}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${document.querySelector('defs').outerHTML}${body}</svg>`;
-document.fonts.ready.then(() => (window.done = true));
+const images = [...document.querySelectorAll('#stage image')].map((img) => new Promise((ok) => {
+  const probe = new Image();
+  probe.onload = probe.onerror = ok;
+  probe.src = img.getAttribute('href');
+}));
+Promise.all([document.fonts.ready, ...images]).then(() => (window.done = true));
 </script>
 </body></html>

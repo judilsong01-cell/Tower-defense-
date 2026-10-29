@@ -156,15 +156,16 @@ export class SquadScene extends Phaser.Scene {
     const sx = x + 126;
     const sw = w - (sx - x) - 10;
     add(text(this, sx, y + 10, def.name, { size: 12 }));
-    add(text(this, sx, y + 30, `${t(`class.${def.cls}` as StringKey)} · ${t('squad.level', { n: progress.level })}`, { color: CSS.dim, wrap: sw }));
+    add(text(this, sx, y + 30, t(`class.${def.cls}` as StringKey), { color: CSS.dim, wrap: sw }));
+    add(text(this, sx, y + 42, t('squad.level', { n: progress.level }), { color: CSS.gold }));
     // Experience towards the next level, under the model.
     const need = xpToNext(progress.level);
     const frac = progress.level >= MAX_LEVEL ? 1 : progress.xp / need;
     g.fillStyle(0x000000, 1).fillRect(px - 48, feet + 8, 96, 4);
     g.fillStyle(COLORS.sp, 1).fillRect(px - 48, feet + 8, Math.round(96 * frac), 4);
     add(text(this, px, feet + 14, progress.level >= MAX_LEVEL ? t('squad.maxLevel') : t('squad.xp', { xp: progress.xp, need }), { align: 'center', color: CSS.dim }));
-    add(text(this, sx, y + 44, t(`squad.placement.${def.placement}` as StringKey), { color: CSS.dim, wrap: sw }));
-    add(text(this, sx, y + 70, def.tags.map((tag) => t(`tag.${tag}` as StringKey)).join(', '), { color: CSS.gold, wrap: sw }));
+    add(text(this, sx, y + 56, t(`squad.placement.${def.placement}` as StringKey), { color: CSS.dim, wrap: sw }));
+    add(text(this, sx, y + 84, def.tags.map((tag) => t(`tag.${tag}` as StringKey)).join(', '), { color: CSS.gold, wrap: sw }));
     const stats = [
       `HP ${def.hp}`,
       `${def.heals ? '+' : 'ATK'} ${def.atk}  DEF ${def.def}`,
@@ -172,17 +173,17 @@ export class SquadScene extends Phaser.Scene {
       t('panel.cost', { n: def.cost }),
       t('panel.cooldown', { s: def.redeploy }),
     ].filter(Boolean);
-    add(text(this, sx, y + 90, stats.join('\n'), { wrap: sw }));
+    add(text(this, sx, y + 100, stats.join('\n'), { wrap: sw }));
 
     // Attack range (facing right): red = the operator, light = tiles it reaches.
-    add(text(this, sx, y + 160, t('squad.range'), { color: CSS.dim }));
+    add(text(this, sx, y + 168, t('squad.range'), { color: CSS.dim }));
     const cell = 7;
     const xs = def.range.map((o) => o[0]).concat(0);
     const ys = def.range.map((o) => o[1]).concat(0);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const rx = sx + 64;
-    const ry = y + 156;
+    const ry = y + 164;
     for (const [ox, oy] of def.range) g.fillStyle(def.heals ? COLORS.heal : COLORS.regime, 0.7).fillRect(rx + (ox - minX) * cell, ry + (oy - minY) * cell, cell - 1, cell - 1);
     g.fillStyle(COLORS.red, 1).fillRect(rx - minX * cell, ry - minY * cell, cell - 1, cell - 1);
 

@@ -82,7 +82,7 @@ export class HomeScene extends Phaser.Scene {
     // Progress and language.
     this.add.image(mx + 8, 268, 'ui_star').setScale(2).setOrigin(0, 0.5);
     text(this, mx + 30, 264, `${totalStars(save.levels)}/${LEVELS.length * 3}`, { color: CSS.gold });
-    soundButtons(this, GAME_W - 268, GAME_H - 30, 130, soundLabels(), saveSound);
+    soundButtons(this, GAME_W - 268, GAME_H - 56, 256, soundLabels(), saveSound);
     new Button(this, GAME_W - 132, GAME_H - 30, 120, 20, t('menu.language'), () => {
       const lang = LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length];
       setLang(lang);

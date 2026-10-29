@@ -172,7 +172,7 @@ export const pt = {
   'squad.xp': 'XP {xp}/{need}',
   'squad.maxLevel': 'Nível máximo',
   'set.sound': 'SOM: {v}',
-  'set.music': 'MÚSICA: {v}',
+  'set.music': 'MUSICA: {v}',
   'set.on': 'SIM',
   'set.off': 'NÃO',
   'tut.drag': 'Arrasta uma carta lá de baixo para uma casa vermelha do mapa.',

@@ -1,6 +1,23 @@
-# Ficha da loja (Google Play): opções para a beta
+# Ficha da loja (Google Play)
 
-Escolhe uma opção de cada (ou mistura). Imagens das opções: [opcoes_beta.png](opcoes_beta.png).
+## Escolhas finais (beta)
+
+| Campo | Valor | Ficheiro |
+| --- | --- | --- |
+| Nome | **Muxima: Resistência** | |
+| Descrição curta | Tower defense estratégico: bloqueia o Regime e protege a base. | |
+| Descrição completa | Versão 1 (abaixo) | |
+| Ícone da app (512×512) | I3: Brasa em 3D com o coração | `icone_app_512.png` |
+| Imagem de destaque (1024×500) | F2: a Brasa em destaque | `destaque_1024x500.png` |
+| Capturas de ecrã (1920×1080) | 6 capturas com legenda | `capturas/1_lava.png` … `6_home.png` |
+| Política de privacidade | Página pública (PT + EN) | `privacidade.html` |
+| Categoria | Jogos → Estratégia | |
+
+O ícone do celular (launcher) também passou a ser a Brasa com o coração; o nome por baixo do ícone continua **Muxima**.
+
+---
+
+Opções que estavam em cima da mesa: [opcoes_beta.png](opcoes_beta.png).
 
 ## Nome (máx. 30) e descrição curta (máx. 80)
 

@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+html, body { margin: 0; background: #0e0f12; }
+#stage { position: relative; width: 1024px; height: 500px; overflow: hidden; background: #0e0f12; font-family: Inter, sans-serif; }
+#stage img { position: absolute; }
+</style></head><body>
+<!-- Google Play feature graphic (option F2): Brasa, the MUXIMA logo and the tagline over a 3D map. -->
+<div id="stage">
+  <img src="../../public/assets/maps/l21.jpg" style="left:-582px;top:-155px;width:2521px;filter:brightness(.35) saturate(.6)">
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(14,15,18,.15),rgba(14,15,18,.92) 58%)"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 22% 70%,rgba(200,50,58,.28),rgba(0,0,0,0) 55%)"></div>
+  <img src="brasa_hd.png" style="left:-96px;bottom:-62px;width:640px">
+  <img src="../../public/assets/ui/logo.png" style="left:540px;top:128px;width:450px">
+  <div style="position:absolute;left:556px;top:272px;font:700 21px Inter;letter-spacing:3.5px;color:#ff8a8f;white-space:nowrap">A RESISTÊNCIA PRECISA DE TI</div>
+  <div style="position:absolute;left:556px;top:314px;font:500 21px Inter;color:#c4c8d0;white-space:nowrap">Tower defense tático · 30 missões · offline</div>
+</div>
+<script>
+Promise.all([document.fonts.ready, ...[...document.images].map((i) => (i.complete ? 1 : new Promise((ok) => (i.onload = i.onerror = ok))))]).then(() => (window.done = true));
+</script>
+</body></html>
