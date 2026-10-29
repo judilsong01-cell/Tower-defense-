@@ -24,6 +24,8 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
   vitória (com o teu replay ou a IA) para ganhar XP; a velocidade x1/x2/x3 fica guardada.
 - **Feito para o celular**: o botão voltar do Android volta ao ecrã anterior (em batalha abre a pausa), a batalha
   pausa sozinha se saíres da app, o ecrã não se apaga durante o jogo e o telemóvel vibra quando perdes uma vida.
+- **Arquivo do Regime**: no ecrã inicial, os 12 inimigos com modelo animado, estatísticas, fraquezas, resistências,
+  o operador ideal e o primeiro estágio onde aparecem.
 - **Tutorial no 1-1**: dicas passo a passo na primeira vez; a batalha espera até colocares o primeiro operador.
 - **Ecrã inteiro no celular**: a largura do jogo adapta-se ao formato do ecrã (16:9 até 2.4:1, ex. 20:9 no A21s).
 

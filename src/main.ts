@@ -5,6 +5,7 @@ import { COLORS, GAME_H, GAME_W, ZOOM } from './config';
 import { audio } from './game/audio';
 import { initBackButton } from './game/nav';
 import { BattleScene } from './game/scenes/BattleScene';
+import { ArchiveScene } from './game/scenes/ArchiveScene';
 import { BootScene } from './game/scenes/BootScene';
 import { HomeScene } from './game/scenes/HomeScene';
 import { MenuScene } from './game/scenes/MenuScene';
@@ -31,7 +32,7 @@ async function start(): Promise<void> {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     input: { activePointers: 2 },
-    scene: [BootScene, HomeScene, MenuScene, SquadScene, BattleScene],
+    scene: [BootScene, HomeScene, MenuScene, SquadScene, ArchiveScene, BattleScene],
   });
   initBackButton(game);
 }

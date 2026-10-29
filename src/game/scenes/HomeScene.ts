@@ -74,17 +74,18 @@ export class HomeScene extends Phaser.Scene {
 
     const next = [...LEVELS].reverse().find((l) => isUnlocked(l.id, save.levels));
     const allDone = LEVELS.every((l) => (save.levels[l.id]?.stars ?? 0) >= 3);
-    this.entry(mx, 92, 240, 84, t('home.combat'), allDone ? t('home.combatDone') : t('home.combatNext', { l: next ? levelLabel(next) : '1-1' }), true, () => {
+    this.entry(mx, 76, 240, 80, t('home.combat'), allDone ? t('home.combatDone') : t('home.combatNext', { l: next ? levelLabel(next) : '1-1' }), true, () => {
       if (next) session.selectedLevel = next.id;
       this.scene.start('Menu');
     });
-    this.entry(mx, 188, 240, 56, t('home.squad'), t('home.squadSub', { n: squad.length }), false, () => this.scene.start('Squad', {}));
+    this.entry(mx, 166, 240, 50, t('home.squad'), t('home.squadSub', { n: squad.length }), false, () => this.scene.start('Squad', {}));
+    this.entry(mx, 224, 240, 50, t('home.archive'), t('home.archiveSub'), false, () => this.scene.start('Archive'));
 
     // Progress and language.
-    this.add.image(mx + 8, 268, 'ui_star').setScale(2).setOrigin(0, 0.5);
-    text(this, mx + 30, 264, `${totalStars(save.levels)}/${LEVELS.length * 3}`, { color: CSS.gold });
-    soundButtons(this, GAME_W - 268, GAME_H - 56, 256, soundLabels(), saveSound);
-    new Button(this, GAME_W - 132, GAME_H - 30, 120, 20, t('menu.language'), () => {
+    this.add.image(mx + 8, 290, 'ui_star').setScale(2).setOrigin(0, 0.5);
+    text(this, mx + 30, 286, `${totalStars(save.levels)}/${LEVELS.length * 3}`, { color: CSS.gold });
+    soundButtons(this, GAME_W - 268, GAME_H - 52, 256, soundLabels(), saveSound);
+    new Button(this, GAME_W - 132, GAME_H - 28, 120, 20, t('menu.language'), () => {
       const lang = LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length];
       setLang(lang);
       writeSave((s) => (s.lang = lang));
