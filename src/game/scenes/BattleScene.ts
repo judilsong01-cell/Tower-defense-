@@ -43,8 +43,8 @@ const logical = (p: Phaser.Input.Pointer): Pt => ({ x: p.x / ZOOM, y: p.y / ZOOM
 
 /** Map zoom range (on top of ZOOM). Phones start zoomed in so tiles are big enough for a finger. */
 const MAP_ZOOM_MIN = 1;
-const MAP_ZOOM_MAX = 2.2;
-const MAP_ZOOM_TOUCH = 1.5;
+const MAP_ZOOM_MAX = 3;
+const MAP_ZOOM_TOUCH = 1.85;
 /** On touch, deploy targets sit a little above the fingertip so the finger does not hide them. */
 const TOUCH_AIM_Y = -8;
 
@@ -91,11 +91,13 @@ const TILE_TEXTURE: Record<TileKind, string> = {
 };
 
 /**
- * Pre-rendered 3D map backgrounds (public/assets/maps/<level>.jpg, made by tools/models3d/map3d.js).
- * Each image covers the map plus a margin of tiles around it, at PPU image pixels per tile.
+ * Pre-rendered 3D map backgrounds (public/assets/maps/<level>.jpg, made by tools/models3d/map3d2.js).
+ * Each image covers the map plus a thin margin of tiles around it, at PPU image pixels per tile, and fades
+ * into MAP_HAZE at its border, which is also painted behind it.
  * High ground is drawn raised, so units and highlights on it are lifted by LIFT pixels.
  */
-const MAP3D = { ppu: 64, marginLeft: 7, marginTop: 1.5, lift: 10 };
+const MAP3D = { ppu: 128, marginLeft: 2, marginTop: 1.5, lift: 10 };
+const MAP_HAZE = 0x080a12;
 
 const DIR_ANGLE: Record<Dir, number> = { right: 0, down: 90, left: 180, up: 270 };
 const DIR_VEC: Record<Dir, [number, number]> = { right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1] };
@@ -188,7 +190,7 @@ export class BattleScene extends Phaser.Scene {
     // Two cameras: the map camera zooms and scrolls, the HUD camera stays fixed at ZOOM.
     // New objects belong to the map unless ui() moves them to the HUD.
     const touch = this.sys.game.device.input.touch;
-    this.mapZoom = Phaser.Math.Clamp(loadSave().mapZoom ?? (touch ? MAP_ZOOM_TOUCH : 1), MAP_ZOOM_MIN, MAP_ZOOM_MAX);
+    this.mapZoom = Phaser.Math.Clamp(loadSave().zoom ?? (touch ? MAP_ZOOM_TOUCH : 1), MAP_ZOOM_MIN, MAP_ZOOM_MAX);
     this.cameras.main.setOrigin(0, 0).setZoom(ZOOM * this.mapZoom);
     const old = this.cameras.getCamera('ui');
     if (old) this.cameras.remove(old);
@@ -403,7 +405,7 @@ export class BattleScene extends Phaser.Scene {
     const cam = this.cameras.main.setZoom(ZOOM * z);
     const [x, y] = this.clampScroll(a.x - screenX / z, a.y - screenY / z);
     cam.setScroll(x, y);
-    writeSave((s) => (s.mapZoom = Math.round(z * 100) / 100));
+    writeSave((s) => (s.zoom = Math.round(z * 100) / 100));
   }
 
   /** Two fingers on the map zoom it. Returns true while a pinch is in progress. */
@@ -451,7 +453,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.map3d) {
       const tex = this.textures.get(key);
       tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
-      this.cameras.main.setBackgroundColor(0x0b0c10);
+      this.cameras.main.setBackgroundColor(MAP_HAZE);
       // Big image: free it when the battle ends instead of keeping one per stage played.
       this.events.once('shutdown', () => this.textures.remove(key));
       this.add.image(-MAP3D.marginLeft * TILE, -MAP3D.marginTop * TILE, key).setOrigin(0, 0).setScale(TILE / MAP3D.ppu).setDepth(0);

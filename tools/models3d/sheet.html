@@ -6,10 +6,11 @@
 <script type="module">
 // Fixed orthographic camera shared by every model, so sizes stay consistent in game.
 import * as THREE from 'three';
-import { build } from './models.js';
 import { pose } from './anim.js';
 
 const params = new URLSearchParams(location.search);
+// v=2 selects the second-generation models (kit2.js / models2.js).
+const { build } = await import(params.get('v') === '2' ? './models2.js' : './models.js');
 const id = params.get('id');
 const PX = +(params.get('px') || 160);          // frame size in pixels
 const ZOOMF = +(params.get('zoom') || 1);       // >1: same framing as px/zoom, rendered with more detail

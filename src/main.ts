@@ -35,6 +35,8 @@ async function start(): Promise<void> {
     scene: [BootScene, HomeScene, MenuScene, SquadScene, ArchiveScene, BattleScene],
   });
   initBackButton(game);
+  // Dev server only: lets tools jump to any scene for screenshots.
+  if (import.meta.env.DEV) (window as unknown as { __game?: Phaser.Game }).__game = game;
 }
 
 // Audio may only start after a user gesture (browser and WebView rule).

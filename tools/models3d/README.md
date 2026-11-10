@@ -29,19 +29,31 @@ Estado: **modelos e animações aprovados e no jogo**.
 
 ## Mapas 3D
 
-Cada estágio tem um fundo 3D pré-renderizado (`public/assets/maps/<estágio>.jpg`), no mesmo estilo cartoon.
+Cada estágio tem um fundo 3D pré-renderizado (`public/assets/maps/<estágio>.jpg`).
 
-- `map3d.js`: constrói o mapa a partir da grelha do nível (casas, plataformas, portais, base e adereços
-  de cada bioma). Os biomas e as cores estão em `BIOMES`.
-- `mapshot.html`: câmara ortográfica inclinada 46°, alinhada com a grelha de 32 px do jogo (64 px por casa
-  na imagem, mostrada a 50%), com uma margem de casas à volta do mapa.
+- `map3d2.js`: constrói o mapa a partir da grelha do nível, com materiais iluminados, blocos biselados, sombras
+  suaves, sombreado de contacto, espuma na margem da água e brilho nas luzes. Os arredores são lisos (sem
+  edifícios nem adereços) para a área de jogo ocupar o ecrã. Os biomas e as cores estão em `BIOMES`.
+- `mapshot2.html`: câmara ortográfica inclinada 46°, alinhada com a grelha de 32 px do jogo, a 128 px por casa.
+  A imagem tem uma margem fina (2 casas aos lados) e esbate para a cor `MAP_HAZE`, que o jogo pinta por trás.
+- `map3d.js` / `mapshot.html`: a geração anterior (estilo cartoon com contorno), guardada para referência.
 
 ```bash
 cd tools/models3d
+ln -s ../../node_modules node_modules   # three.js vem do package.json da raiz
 npx tsx dump_levels.ts             # levels.json a partir de src/data/levels
 python3 -m http.server 8765 &
 node mapexport.mjs                 # todos; ou: node mapexport.mjs l1,l11
 ```
 
-Se mudares `PITCH`, `H_HIGH` ou `MARGIN` em `map3d.js`, atualiza `MAP3D` em `src/game/scenes/BattleScene.ts`
-(`lift` = `H_HIGH × cos(PITCH) × 32` px). Se faltar a imagem de um estágio, o jogo usa as casas 2D.
+Se mudares `PITCH`, `H_HIGH`, `MARGIN` ou os px por casa, atualiza `MAP3D` em `src/game/scenes/BattleScene.ts`
+(`lift` = `H_HIGH × cos(PITCH) × 32` px) e `MAP_PPU` / `MAP_LEFT` em `MenuScene.ts`. Se faltar a imagem de um
+estágio, o jogo usa as casas 2D.
+
+## Personagens: segunda geração (em aprovação)
+
+`kit2.js` + `models2.js` redesenham os 20 modelos com proporções anime (cerca de 2,4 cabeças), rosto desenhado
+numa textura, sombreado em dois tons com sombra colorida e luz de recorte, e contorno fino da cor de cada peça.
+Usam os mesmos pontos de animação (`anim.js`). Para ver: `render.html?id=brasa&v=2`. As folhas do jogo
+(`public/assets/units/`) ainda vêm de `models.js`; só mudam depois de os modelos novos serem aprovados
+(`sheet.html?v=2`).

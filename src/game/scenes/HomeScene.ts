@@ -35,10 +35,11 @@ export class HomeScene extends Phaser.Scene {
     // Background: a slowly drifting 3D map, darkened, with a light band behind the menu.
     if (this.textures.exists('home_bg')) {
       this.textures.get('home_bg').setFilter(Phaser.Textures.FilterMode.LINEAR);
-      const bg = this.add.image(0, -20, 'home_bg').setOrigin(0, 0).setScale(0.5);
+      // Scaled so the map's faded border stays off-screen while it drifts.
+      const bg = this.add.image(0, -110, 'home_bg').setOrigin(0, 0).setScale(0.36);
       const range = Math.max(0, bg.displayWidth - GAME_W);
-      bg.x = -range * 0.2;
-      this.tweens.add({ targets: bg, x: -range * 0.8, duration: 60000, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      bg.x = -range * 0.3;
+      this.tweens.add({ targets: bg, x: -range * 0.7, duration: 60000, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     }
     const shade = this.add.graphics();
     shade.fillStyle(0x07080b, 0.55).fillRect(0, 0, GAME_W, GAME_H);

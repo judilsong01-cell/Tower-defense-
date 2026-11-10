@@ -18,8 +18,8 @@ const CELL_H = 40;
 const GAP = 6;
 const COLS = 5;
 /** Map image layout (see MAP3D in BattleScene): 64 px per tile, 7 tiles left margin, 1.5 on top. */
-const MAP_PPU = 64;
-const MAP_LEFT = 7;
+const MAP_PPU = 128;
+const MAP_LEFT = 2;
 const MAP_TOP = 1.5;
 
 /** Stage select: chapters, stage grid with locks, a 3D preview of the map and the stage briefing. */

@@ -10,7 +10,7 @@ const page = await browser.newPage();
 page.on('console', (m) => { if (m.type() === 'error') console.log('console:', m.text()); });
 page.on('pageerror', (e) => console.log('pageerror:', e.message));
 for (const id of ids) {
-  await page.goto('http://localhost:8765/mapshot.html');
+  await page.goto('http://localhost:8765/mapshot2.html');
   await page.waitForFunction(() => window.done === true, null, { timeout: 60000 });
   const t = Date.now();
   const url = await page.evaluate((id) => window.render(id), id);
