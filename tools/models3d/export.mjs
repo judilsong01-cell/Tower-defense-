@@ -2,15 +2,15 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
 const OPS = ['brasa', 'faisca', 'muralha', 'bastiao', 'lirio', 'corvo', 'falcao', 'trovao'];
 const ENS = ['peacekeeper', 'hound', 'riot', 'rifleman', 'drone', 'gunship', 'executor', 'incinerator', 'infiltrator', 'medic', 'armored', 'cleric'];
-const PX = 192, N = 8;
-const V = process.argv[2] || '1';   // model generation: node export.mjs 2 exports kit2 / models2
+// 288 px frames: the framing of a 192 px frame rendered 1.5x larger, so sprites stay sharp when zoomed in.
+const ZOOM = 1.5, PX = 192 * ZOOM, N = 8;
 fs.mkdirSync('export', { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: PX, height: PX } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 for (const id of [...OPS, ...ENS]) {
-  await page.goto(`http://localhost:8765/sheet.html?id=${id}&px=${PX}&v=${V}`);
+  await page.goto(`http://localhost:8765/sheet.html?id=${id}&px=${PX}&zoom=${ZOOM}`);
   await page.waitForFunction(() => window.done === true, null, { timeout: 30000 });
   const rows = OPS.includes(id) ? ['idle', 'attack'] : ['move', 'attack'];
   for (const [r, anim] of rows.entries()) {

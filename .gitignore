@@ -9,5 +9,6 @@ keystore.properties
 tools/models3d/levels.json
 tools/models3d/node_modules
 tools/models3d/export/
+tools/models3d/portrait/
 # Debug APK built by npm run android:apk
 /TowerDefense.apk

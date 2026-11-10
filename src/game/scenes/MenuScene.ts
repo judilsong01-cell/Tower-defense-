@@ -18,9 +18,6 @@ const CELL_H = 40;
 const GAP = 6;
 const COLS = 5;
 /** Map image layout (see MAP3D in BattleScene): 64 px per tile, 7 tiles left margin, 1.5 on top. */
-const MAP_PPU = 128;
-const MAP_LEFT = 2;
-const MAP_TOP = 1.5;
 
 /** Stage select: chapters, stage grid with locks, a 3D preview of the map and the stage briefing. */
 export class MenuScene extends Phaser.Scene {
@@ -122,7 +119,7 @@ export class MenuScene extends Phaser.Scene {
     this.levelDetail(level);
   }
 
-  /** The stage's 3D map, cropped to the playable area, under the stage grid. */
+  /** The stage's 3D map under the stage grid. */
   private showPreview(level: LevelDef): void {
     const box = { x: 12, y: TOP + 2 * (CELL_H + GAP) + 4, w: this.leftW, h: GAME_H - (TOP + 2 * (CELL_H + GAP) + 4) - 10 };
     const g = this.add.graphics();
@@ -133,15 +130,11 @@ export class MenuScene extends Phaser.Scene {
       if (session.selectedLevel !== level.id || !this.sys.isActive() || !this.textures.exists(key)) return;
       this.preview?.destroy();
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
-      const w = level.map[0].length;
-      const h = level.map.length;
-      const cx = (MAP_LEFT - 0.5) * MAP_PPU;
-      const cy = (MAP_TOP - 0.5) * MAP_PPU;
-      const cw = (w + 1) * MAP_PPU;
-      const ch = (h + 1.5) * MAP_PPU;
-      const s = Math.min(box.w / cw, box.h / ch);
-      this.preview = this.add.image(0, 0, key).setOrigin(0, 0).setScale(s).setCrop(cx, cy, cw, ch);
-      this.preview.setPosition(Math.round(box.x + (box.w - cw * s) / 2 - cx * s), Math.round(box.y + (box.h - ch * s) / 2 - cy * s));
+      // The image already frames the playable area: show all of it.
+      const src = this.textures.get(key).getSourceImage();
+      const s = Math.min(box.w / src.width, box.h / src.height);
+      this.preview = this.add.image(0, 0, key).setOrigin(0, 0).setScale(s);
+      this.preview.setPosition(Math.round(box.x + (box.w - src.width * s) / 2), Math.round(box.y + (box.h - src.height * s) / 2));
       this.preview.setAlpha(0);
       this.tweens.add({ targets: this.preview, alpha: 1, duration: 150 });
       this.detail.push(this.preview);

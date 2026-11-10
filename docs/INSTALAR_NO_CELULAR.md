@@ -37,6 +37,19 @@ npm install
 
 > Se a pasta estiver noutro sítio, usa o caminho certo no `cd`, por exemplo `cd C:\Users\judil\Tower-defense-`.
 
+### Começar numa pasta nova (por exemplo no disco E:)
+
+Se preferires uma cópia limpa do projeto noutra unidade:
+
+```powershell
+git clone https://github.com/judilsong01-cell/Tower-defense-.git E:\Muxima
+cd E:\Muxima
+npm install
+```
+
+Depois segue o passo 3 a partir dessa pasta. O APK gerado numa pasta nova no **mesmo PC** tem a mesma
+assinatura de teste, por isso instala por cima do jogo que já tens no celular.
+
 ---
 
 ## 3. Gerar o APK

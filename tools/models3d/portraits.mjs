@@ -1,5 +1,5 @@
 // High-detail idle animations of the operators for the menus (start screen, squad).
-// Same framing as the 192 px game sheets, rendered 3x larger (576 px frames).
+// Same framing as the game sheets, rendered at 576 px per frame.
 // Usage (server on 8765 as in README): node portraits.mjs && python3 build_portraits.py
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import fs from 'node:fs';

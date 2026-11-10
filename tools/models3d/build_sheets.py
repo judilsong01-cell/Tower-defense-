@@ -8,8 +8,9 @@ ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
 OPS = ['brasa', 'faisca', 'muralha', 'bastiao', 'lirio', 'corvo', 'falcao', 'trovao']
 ENS = ['peacekeeper', 'hound', 'riot', 'rifleman', 'drone', 'gunship', 'executor', 'incinerator',
        'infiltrator', 'medic', 'armored', 'cleric']
-PX, N = 192, 8
-FEET = PX - 12
+ZOOM = 1.5                      # frames are the 192 px framing rendered 1.5x larger (see export.mjs)
+PX, N = int(192 * ZOOM), 8
+FEET = PX - int(12 * ZOOM)
 
 out_dir = os.path.join(ROOT, 'public', 'assets', 'units')
 os.makedirs(out_dir, exist_ok=True)
@@ -31,7 +32,7 @@ for uid in OPS + ENS:
     is_op = uid in OPS
     sprites[('op_' if is_op else 'en_') + uid] = {
         'file': f'units/{uid}.png', 'frameWidth': PX, 'frameHeight': PX,
-        'scale': 0.5, 'originY': round(FEET / PX, 4), 'top': FEET - top, 'smooth': True, 'baked': True,
+        'scale': round(0.5 / ZOOM, 4), 'originY': round(FEET / PX, 4), 'top': FEET - top, 'smooth': True, 'baked': True,
         'anims': ({'idle': {'frames': list(range(0, 8)), 'fps': 8}, 'attack': {'frames': list(range(8, 16)), 'fps': 16}} if is_op else
                   {'move': {'frames': list(range(0, 8)), 'fps': 10}, 'attack': {'frames': list(range(8, 16)), 'fps': 14}}),
     }

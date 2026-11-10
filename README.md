@@ -24,8 +24,11 @@ Feito com **Phaser 3 + TypeScript + Vite** e empacotado para Android (**.aab** p
   vitória (com o teu replay ou a IA) para ganhar XP; a velocidade x1/x2/x3 fica guardada.
 - **Feito para o celular**: o botão voltar do Android volta ao ecrã anterior (em batalha abre a pausa), a batalha
   pausa sozinha se saíres da app, o ecrã não se apaga durante o jogo e o telemóvel vibra quando perdes uma vida.
-- **Mapas redesenhados e blocos maiores**: fundos 3D com luz, sombras suaves e brilho, sem edifícios à volta; no
-  celular o mapa abre mais aproximado (zoom 1,85; pinça entre 1x e 3x) para os blocos serem fáceis de tocar.
+- **Mapas em perspetiva, ao estilo do Arknights**: cada estágio é um cenário 3D visto por uma câmara inclinada,
+  com plataformas elevadas, cubo vermelho na entrada dos inimigos e azul no ponto a defender. Sem edifícios à
+  volta: o estágio ocupa o ecrã e no celular abre aproximado (pinça para afastar até ver tudo ou aproximar até 3x).
+- **Personagens redesenhados**: os 8 operadores e os 12 inimigos com proporções anime, rosto desenhado, roupa com
+  mais detalhe e mais resolução.
 - **Arquivo do Regime**: no ecrã inicial, os 12 inimigos com modelo animado, estatísticas, fraquezas, resistências,
   o operador ideal e o primeiro estágio onde aparecem.
 - **Tutorial no 1-1**: dicas passo a passo na primeira vez; a batalha espera até colocares o primeiro operador.

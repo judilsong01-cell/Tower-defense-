@@ -5,11 +5,11 @@
 </head><body>
 <script type="module">
 import * as THREE from 'three';
+import { build } from './models2.js';
 import { pose } from './anim.js';
 
 const params = new URLSearchParams(location.search);
-// v=2 selects the second-generation models (kit2.js / models2.js).
-const { build } = await import(params.get('v') === '2' ? './models2.js' : './models.js');
+
 const id = params.get('id') || 'brasa';
 const W = +(params.get('w') || 520), H = +(params.get('h') || 620);
 const yaw = +(params.get('yaw') || 0.55);

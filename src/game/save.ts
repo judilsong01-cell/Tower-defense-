@@ -14,8 +14,8 @@ export interface SaveData {
   lang?: Lang;
   autoSkill: boolean;
   /** Last map zoom chosen in battle (pinch / ctrl+wheel). */
-  /** Battle map zoom chosen by the player (a new key: the old `mapZoom` belonged to the smaller default). */
-  zoom?: number;
+  /** Battle map zoom chosen by the player, as a factor of each stage's starting zoom. */
+  zoomK?: number;
   /** Battle speed index (x1/x2/x3), kept between battles. */
   speed?: number;
   /** Sound effects / music switches (default on). */
